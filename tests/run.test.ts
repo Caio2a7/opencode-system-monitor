@@ -60,4 +60,27 @@ describe("runCommand", () => {
     const err = await runCommand(process.execPath, node("setTimeout(() => {}, 30000)"), { ...opts, signal: ctl.signal }).catch((e) => e)
     expect(err.code).toBe("ABORT_ERR")
   })
+
+  test("preserves multi-byte UTF-8 characters split byte-by-byte across chunks", async () => {
+    const text = "System · 62°C — GPU ⚡🔥 100%"
+    const code = `
+      const buf = Buffer.from(${JSON.stringify(text)}, "utf8");
+      let i = 0;
+      const tick = () => {
+        if (i >= buf.length) return;
+        process.stdout.write(buf.subarray(i, i + 1));
+        i++;
+        setTimeout(tick, 2);
+      };
+      tick();
+    `
+    const out = await runCommand(process.execPath, node(code), opts)
+    expect(out).toBe(text)
+  })
+
+  test("stderr overflow rejects and kills the process", async () => {
+    const err = await runCommand(process.execPath, node("process.stderr.write('e'.repeat(5000))"), { ...opts, maxBytes: 100 }).catch((e) => e)
+    expect(err).toBeInstanceOf(Error)
+    expect(err.message).toMatch(/output exceeded 100 bytes/)
+  })
 })

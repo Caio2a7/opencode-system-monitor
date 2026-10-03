@@ -21,8 +21,10 @@ export function runCommand(file: string, args: readonly string[], opts: RunOptio
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(abortError(file))
     const child = spawn(file, [...args], { stdio: ["ignore", "pipe", "pipe"], shell: false, windowsHide: true })
-    let out = ""
-    let err = ""
+    const outChunks: Buffer[] = []
+    const errChunks: Buffer[] = []
+    let outBytes = 0
+    let errBytes = 0
     let done = false
 
     const finish = (action: () => void, kill = false): void => {
@@ -42,18 +44,24 @@ export function runCommand(file: string, args: readonly string[], opts: RunOptio
 
     signal?.addEventListener("abort", onAbort, { once: true })
     child.stdout.on("data", (chunk: Buffer) => {
-      out += chunk
-      if (Buffer.byteLength(out) > maxBytes) overflow()
+      outBytes += chunk.byteLength
+      if (outBytes > maxBytes) return overflow()
+      outChunks.push(chunk)
     })
     child.stderr.on("data", (chunk: Buffer) => {
-      err += chunk
-      if (Buffer.byteLength(err) > maxBytes) overflow()
+      errBytes += chunk.byteLength
+      if (errBytes > maxBytes) return overflow()
+      errChunks.push(chunk)
     })
     child.on("error", (e) => finish(() => reject(e)))
     child.on("close", (code) =>
       finish(() => {
-        if (code === 0) resolve(out)
-        else reject(new Error(err.trim().slice(0, MAX_ERROR_CHARS) || `${file} exited with code ${code}`))
+        if (code === 0) {
+          resolve(Buffer.concat(outChunks, outBytes).toString("utf8"))
+        } else {
+          const errText = Buffer.concat(errChunks, errBytes).toString("utf8").trim().slice(0, MAX_ERROR_CHARS)
+          reject(new Error(errText || `${file} exited with code ${code}`))
+        }
       }),
     )
   })
