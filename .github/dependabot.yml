@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Must match the OpenCode host version; bumped manually.
+    ignore:
+      - dependency-name: "@opentui/*"
+      - dependency-name: "@opencode/*"
+      - dependency-name: "solid-js"
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
