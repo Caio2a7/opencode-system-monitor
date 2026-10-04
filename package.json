@@ -1,0 +1,91 @@
+{
+  "name": "opencode-system-monitor",
+  "version": "0.1.0",
+  "description": "System monitor for the OpenCode TUI sidebar: live CPU, RAM, disk, NVIDIA GPU, VRAM and network usage bars that follow your OpenCode theme.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Caio2a7 <caiodanielfonseca@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Caio2a7/opencode-system-monitor.git"
+  },
+  "homepage": "https://github.com/Caio2a7/opencode-system-monitor#readme",
+  "bugs": {
+    "url": "https://github.com/Caio2a7/opencode-system-monitor/issues"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "opencode-v2",
+    "opencode-tui",
+    "opencode-sidebar",
+    "sidebar",
+    "system-monitor",
+    "resource-monitor",
+    "performance-monitor",
+    "cpu",
+    "ram",
+    "memory",
+    "disk",
+    "gpu",
+    "nvidia",
+    "vram",
+    "network",
+    "btop",
+    "tui",
+    "terminal",
+    "linux"
+  ],
+  "exports": {
+    "./tui": "./dist/tui.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "prepack": "bun scripts/build.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "peerDependencies": {
+    "@opentui/core": ">=0.5.14",
+    "@opentui/solid": ">=0.5.14",
+    "solid-js": ">=1.9.0"
+  },
+  "devDependencies": {
+    "@opencode/plugin": "2.0.22",
+    "@opencode/theme": "2.0.22",
+    "@opentui/core": "0.5.14",
+    "@opentui/solid": "0.5.14",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^26.6.4",
+    "solid-js": "1.9.12",
+    "typescript": "^7.0.2"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "os": [
+    "linux"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "peerDependenciesMeta": {
+    "@opentui/core": {
+      "optional": true
+    },
+    "@opentui/solid": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    }
+  }
+}
