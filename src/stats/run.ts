@@ -32,7 +32,11 @@ export function runCommand(file: string, args: readonly string[], opts: RunOptio
       done = true
       clearTimeout(timer)
       signal?.removeEventListener("abort", onAbort)
-      if (kill) child.kill("SIGKILL")
+      if (kill) {
+        child.stdout.destroy()
+        child.stderr.destroy()
+        child.kill("SIGKILL")
+      }
       action()
     }
     const onAbort = (): void => finish(() => reject(abortError(file)), true)

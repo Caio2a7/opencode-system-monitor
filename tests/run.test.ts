@@ -83,4 +83,17 @@ describe("runCommand", () => {
     expect(err).toBeInstanceOf(Error)
     expect(err.message).toMatch(/output exceeded 100 bytes/)
   })
+
+  test("timeout settles promptly even if a grandchild inherits stdout/stderr pipes", async () => {
+    const code = `
+      const { spawn } = require("node:child_process");
+      spawn(process.execPath, ["-e", "setTimeout(() => {}, 400)"], { stdio: "inherit" });
+      setTimeout(() => {}, 30000);
+    `
+    const start = Date.now()
+    const err = await runCommand(process.execPath, node(code), { ...opts, timeoutMs: 80 }).catch((e) => e)
+    expect(err).toBeInstanceOf(Error)
+    expect(err.message).toMatch(/timed out after 80 ms/)
+    expect(Date.now() - start).toBeLessThan(250)
+  })
 })
