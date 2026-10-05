@@ -4,7 +4,7 @@ import { testRender } from "@opentui/solid"
 import type { Renderable } from "@opentui/core"
 import { MonitorView } from "../src/view"
 import type { SystemStats } from "../src/types"
-import { lerp, tempColor } from "../src/scale"
+import { tempColor, toHex } from "../src/scale"
 import { colors, fullStats } from "./fixtures"
 
 const theme = {
@@ -79,10 +79,9 @@ describe("MonitorView", () => {
       const [r, g, b] = spans.find((sp) => sp.text.includes(text))?.fg.toInts() ?? []
       return `#${[r, g, b].map((n) => (n ?? 0).toString(16).padStart(2, "0")).join("")}`
     }
-    const norm = (color: Parameters<typeof lerp>[0]) => lerp(color, color, 0)
-    expect(fg("System")).toBe(norm(colors.base))
-    expect(fg("62°")).toBe(norm(tempColor(colors, 62)))
-    expect(fg("╭")).toBe(norm(colors.border))
+    expect(fg("System")).toBe(toHex(colors.base))
+    expect(fg("62°")).toBe(toHex(tempColor(colors, 62)))
+    expect(fg("╭")).toBe(toHex(colors.border))
   })
 
   test("a stats update reuses every renderable instead of rebuilding the card", async () => {

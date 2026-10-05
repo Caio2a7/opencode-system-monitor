@@ -10,6 +10,7 @@ import {
   USAGE_WARN,
   lerp,
   tempColor,
+  toHex,
   usageColor,
 } from "../src/scale"
 import { colors as c } from "./fixtures"
@@ -41,6 +42,11 @@ describe("lerp", () => {
   test("clamps t to [0, 1]", () => {
     expect(lerp("#102030", "#405060", -5)).toBe("#102030")
     expect(lerp("#102030", "#405060", 7)).toBe("#405060")
+  })
+
+  test("toHex normalizes theme colors and hex strings", () => {
+    expect(toHex(theme("#0a0b0c"))).toBe("#0a0b0c")
+    expect(toHex("#ABCDEF")).toBe("#abcdef")
   })
 
   test("output is lowercase and zero-padded", () => {
@@ -112,10 +118,6 @@ describe("usageColor at and above the high threshold", () => {
 })
 
 describe("tempColor", () => {
-  test("null is muted", () => {
-    expect(tempColor(c, null)).toBe(c.muted)
-  })
-
   test("cool temperatures (<= 50) are green", () => {
     expect(tempColor(c, 0)).toBe(c.success)
     expect(tempColor(c, 45)).toBe(c.success)

@@ -15,7 +15,7 @@ type MathColor = Color | ThemeColor
 type Stop = [number, MathColor]
 
 const hex2 = (n: number): string => Math.round(n).toString(16).padStart(2, "0")
-const toHex = ([r, g, b]: Rgb): string => `#${hex2(r)}${hex2(g)}${hex2(b)}`
+const rgbHex = ([r, g, b]: Rgb): string => `#${hex2(r)}${hex2(g)}${hex2(b)}`
 
 function toRgb(color: MathColor): Rgb {
   if (typeof color !== "string") {
@@ -31,15 +31,17 @@ export function lerp(from: MathColor, to: MathColor, t: number): string {
   const k = Math.max(0, Math.min(1, t))
   const [r1, g1, b1] = toRgb(from)
   const [r2, g2, b2] = toRgb(to)
-  return toHex([r1 + (r2 - r1) * k, g1 + (g2 - g1) * k, b1 + (b2 - b1) * k])
+  return rgbHex([r1 + (r2 - r1) * k, g1 + (g2 - g1) * k, b1 + (b2 - b1) * k])
 }
+
+export const toHex = (color: MathColor): string => rgbHex(toRgb(color))
 
 /** Color at v along ascending [x, color] stops; clamps at both ends. */
 function stops(points: [Stop, ...Stop[]], v: number): string {
   const first = points[0]
   const last = points[points.length - 1] as Stop
-  if (v >= last[0]) return lerp(last[1], last[1], 0)
-  if (v <= first[0]) return lerp(first[1], first[1], 0)
+  if (v >= last[0]) return toHex(last[1])
+  if (v <= first[0]) return toHex(first[1])
   const i = points.findIndex(([x]) => v < x)
   const [x0, c0] = points[i - 1] as Stop
   const [x1, c1] = points[i] as Stop
@@ -57,7 +59,7 @@ function lowColor(c: Palette, kind: MetricKind, v: number): string {
     case "vram":
       return stops([[0, c.purple], [USAGE_MID, c.pink], [USAGE_HIGH, c.yellow]], v)
     case "disk":
-      return lerp(c.base, c.base, 0)
+      return toHex(c.base)
   }
 }
 
@@ -73,8 +75,7 @@ export function usageColor(colors: Palette, kind: MetricKind, value: number): Co
 }
 
 /** Temperature: green up to 50 °C; 50 -> 60 green to yellow; 75 orange; 85 red. */
-export function tempColor(colors: Palette, tempC: number | null): Color {
-  if (tempC === null) return lerp(colors.muted, colors.muted, 0)
+export function tempColor(colors: Palette, tempC: number): Color {
   return stops(
     [
       [TEMP_COOL, colors.success],
