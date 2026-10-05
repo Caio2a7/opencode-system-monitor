@@ -3,19 +3,19 @@ import { cpus, freemem, totalmem } from "node:os"
 import type { CpuStats, DiskStats, GpuResult, SystemStats } from "../types"
 import { cpuPercent, diskPercent, parseNvidiaSmi } from "./parse"
 import type { CpuTimes } from "./parse"
+import { hasCode, messageOf } from "./errors"
 import { diskRoot } from "./parse-os"
-import { runCommand } from "./run"
-import { runNvidiaSmi } from "./smi"
+import { SMI_ARGS } from "./smi"
 import { darwinSource } from "./sources/darwin"
 import { genericSource } from "./sources/generic"
 import { linuxSource } from "./sources/linux"
 import type { CollectorDeps, MemoryStats, StatsSource } from "./sources/types"
 import { win32Source } from "./sources/win32"
+import { createToolRunner, defaultToolHost } from "./tools"
 
 export type { CollectorDeps } from "./sources/types"
 
-const RUN_TIMEOUT_MS = 3000
-const RUN_MAX_BYTES = 64 * 1024
+const runTool = createToolRunner(defaultToolHost())
 
 const defaultDeps: CollectorDeps = {
   readText: (path) => readFile(path, "utf8"),
@@ -23,8 +23,8 @@ const defaultDeps: CollectorDeps = {
     const s = await statfs(path)
     return { blocks: s.blocks, bfree: s.bfree, bavail: s.bavail }
   },
-  runSmi: runNvidiaSmi,
-  run: (file, args, signal) => runCommand(file, args, { timeoutMs: RUN_TIMEOUT_MS, maxBytes: RUN_MAX_BYTES, signal }),
+  runSmi: (signal) => runTool("nvidia-smi", SMI_ARGS, signal),
+  run: runTool,
   cpus: cpus,
   totalmem,
   freemem,
@@ -32,11 +32,6 @@ const defaultDeps: CollectorDeps = {
   platform: process.platform,
   env: process.env,
 }
-
-const hasCode = (err: unknown, code: string): boolean =>
-  typeof err === "object" && err !== null && (err as { code?: unknown }).code === code
-
-const messageOf = (err: unknown): string => (err instanceof Error ? err.message : String(err))
 
 const settled = <T>(r: PromiseSettledResult<T | null>): T | null => (r.status === "fulfilled" ? r.value : null)
 

@@ -1,11 +1,12 @@
 import type { RamStats, SwapStats } from "../../types"
 import type { CpuTimes } from "../parse"
+import type { Tool } from "../tools"
 
 export interface CollectorDeps {
   readText(path: string): Promise<string>
   statfs(path: string): Promise<{ blocks: number; bfree: number; bavail: number }>
   runSmi(signal?: AbortSignal): Promise<string>
-  run(file: string, args: readonly string[], signal?: AbortSignal): Promise<string>
+  run(tool: Tool, args: readonly string[], signal?: AbortSignal): Promise<string>
   cpus(): ReadonlyArray<{ times: { user: number; nice: number; sys: number; idle: number; irq: number } }>
   totalmem(): number
   freemem(): number

@@ -17,7 +17,7 @@ function setup(platform: string, over: Partial<CollectorDeps> = {}) {
       calls.run.push([file, args])
       if (file === "vm_stat") return VM_STAT
       if (file === "sysctl") return SWAPUSAGE_M
-      if (file === "powershell.exe") return PAGEFILE_OUT
+      if (file === "powershell") return PAGEFILE_OUT
       throw new Error(`unexpected ${file}`)
     },
     cpus: () => [{ times: state.times }],
@@ -31,7 +31,7 @@ function setup(platform: string, over: Partial<CollectorDeps> = {}) {
   return { deps, state, calls }
 }
 
-const ps = (calls: ReturnType<typeof setup>["calls"]) => calls.run.filter(([f]) => f === "powershell.exe")
+const ps = (calls: ReturnType<typeof setup>["calls"]) => calls.run.filter(([f]) => f === "powershell")
 
 describe("darwin", () => {
   test("cpu from cpus(): null first, delta second", async () => {
@@ -91,7 +91,7 @@ describe("win32", () => {
     expect(s.gpu && "util" in s.gpu ? s.gpu.util : null).toBe(89)
     expect(calls.read).toBe(0)
     const [file, args] = ps(calls)[0]!
-    expect(file).toBe("powershell.exe")
+    expect(file).toBe("powershell")
     expect(args).toContain("-Command")
     expect(args).toContain(WIN_PAGEFILE_SCRIPT)
   })

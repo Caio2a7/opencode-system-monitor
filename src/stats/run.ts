@@ -4,6 +4,8 @@ export interface RunOptions {
   timeoutMs: number
   maxBytes: number
   signal?: AbortSignal
+  env?: Readonly<Record<string, string>>
+  cwd?: string
 }
 
 const MAX_ERROR_CHARS = 200
@@ -17,10 +19,10 @@ function abortError(file: string): Error {
  * the child is killed on timeout, overflow or abort. Spawn errors (e.g. ENOENT) are propagated as-is.
  */
 export function runCommand(file: string, args: readonly string[], opts: RunOptions): Promise<string> {
-  const { timeoutMs, maxBytes, signal } = opts
+  const { timeoutMs, maxBytes, signal, env, cwd } = opts
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(abortError(file))
-    const child = spawn(file, [...args], { stdio: ["ignore", "pipe", "pipe"], shell: false, windowsHide: true })
+    const child = spawn(file, [...args], { stdio: ["ignore", "pipe", "pipe"], shell: false, windowsHide: true, env, cwd })
     let out = ""
     let err = ""
     let done = false

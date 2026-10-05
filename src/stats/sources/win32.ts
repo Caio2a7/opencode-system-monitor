@@ -15,7 +15,7 @@ export function win32Source(deps: CollectorDeps): StatsSource {
     if (now < nextRefresh) return cached
     nextRefresh = now + SWAP_REFRESH_MS
     try {
-      cached = parsePageFile(await deps.run("powershell.exe", POWERSHELL_ARGS, signal))
+      cached = parsePageFile(await deps.run("powershell", POWERSHELL_ARGS, signal))
     } catch {
       cached = null
     }
