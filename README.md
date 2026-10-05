@@ -31,7 +31,7 @@ puts a small resource monitor (think btop or htop, reduced to six lines) right n
 - Works on Linux, macOS and Windows (see [Platform support](#platform-support)).
 - CPU, RAM, DISK (root filesystem, or the system drive on Windows), GPU utilization, VRAM and SWAP usage bars.
 - GPU temperature in the card title, colored by temperature while "System" keeps the theme text color.
-- Refreshes every 2 seconds by default (`refreshMs`, 500–60000).
+- Refreshes every 2 seconds by default (`refreshMs`, 500–60000), only while the card is on screen.
 - Colors come entirely from the active OpenCode theme; theme changes apply live.
 - Without `nvidia-smi` (and always on macOS) the GPU and VRAM cells disappear and the second row shows only SWAP.
 - Zero runtime dependencies, no network requests, no telemetry.

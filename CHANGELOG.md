@@ -16,6 +16,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Performance
 
+- Metrics are collected only while a card is mounted (home screen, hidden sidebar or narrow terminal: no polling and no subprocesses), with one shared loop for all mounted cards.
+- The second sample is taken 500 ms after the card appears, so CPU shows a value right away instead of `—` for a full refresh interval.
 - The card reuses its renderables on every refresh (`<Index>` plus memoized palette and layout) instead of destroying and recreating about 50 of them each tick.
 - On Linux, `nvidia-smi` is not run while every NVIDIA GPU is runtime-suspended (RTD3), so polling no longer keeps a laptop's discrete GPU awake; the GPU and VRAM cells show `off` instead.
 - macOS swap (`sysctl -n vm.swapusage`) is queried at most every 10 s instead of every tick.
