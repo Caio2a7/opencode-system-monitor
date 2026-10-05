@@ -61,6 +61,19 @@ describe("darwin", () => {
     expect((await createCollector(deps).collect()).disk?.percent).toBeCloseTo(60, 10)
   })
 
+  test("vm_stat runs every tick, sysctl at most every 10 s", async () => {
+    const { deps, state, calls } = setup("darwin")
+    const c = createCollector(deps)
+    const count = (f: string) => calls.run.filter(([file]) => file === f).length
+    await c.collect()
+    state.now += 9_999
+    expect((await c.collect()).swap).not.toBeNull()
+    expect([count("vm_stat"), count("sysctl")]).toEqual([2, 1])
+    state.now += 1
+    await c.collect()
+    expect([count("vm_stat"), count("sysctl")]).toEqual([3, 2])
+  })
+
   test("failing vm_stat leaves swap intact", async () => {
     const { deps } = setup("darwin")
     const run = deps.run

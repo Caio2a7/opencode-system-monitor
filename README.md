@@ -112,7 +112,7 @@ The plugin runs on Linux, macOS and Windows; the package installs on any OS.
 | ------------- | ---------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | CPU           | `/proc/stat` (incl. iowait)              | `os.cpus()` deltas                             | `os.cpus()` deltas                                                                               |
 | RAM           | `/proc/meminfo` (MemTotal − MemAvailable); inside a container with a lower cgroup memory limit, usage − inactive file cache over that limit | `vm_stat` active + wired + compressed pages    | total − available physical memory                                                                |
-| Swap          | `/proc/meminfo`                          | `sysctl -n vm.swapusage`                       | page file usage via PowerShell `Get-CimInstance Win32_PageFileUsage`, refreshed at most every 30 s |
+| Swap          | `/proc/meminfo`                          | `sysctl -n vm.swapusage`, at most every 10 s   | page file usage via PowerShell `Get-CimInstance Win32_PageFileUsage`, refreshed at most every 30 s |
 | Disk          | `statfs("/")`                            | `statfs("/")`, APFS container used / size      | `statfs` of the system drive (`%SystemDrive%`, default `C:\`)                                    |
 | GPU/VRAM/temp | `nvidia-smi`, skipped while the dGPU is runtime-suspended (`off`) | not available (cells hidden)                   | `nvidia-smi` (NVIDIA drivers)                                                                    |
 

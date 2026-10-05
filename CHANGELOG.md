@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 - The card reuses its renderables on every refresh (`<Index>` plus memoized palette and layout) instead of destroying and recreating about 50 of them each tick.
 - On Linux, `nvidia-smi` is not run while every NVIDIA GPU is runtime-suspended (RTD3), so polling no longer keeps a laptop's discrete GPU awake; the GPU and VRAM cells show `off` instead.
+- macOS swap (`sysctl -n vm.swapusage`) is queried at most every 10 s instead of every tick.
 - A missing `nvidia-smi` is re-checked every 5 minutes instead of on every tick, failures back off exponentially (5 s up to 5 minutes), and a new `nvidia-smi` is never started while the previous one is still alive (a hung driver no longer piles up processes).
 
 ### Fixed
