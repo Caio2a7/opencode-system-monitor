@@ -67,7 +67,7 @@ With options:
 From a local checkout:
 
 ```sh
-bun install && bun run build
+bun install
 ```
 
 Then use the absolute path of the checkout:
