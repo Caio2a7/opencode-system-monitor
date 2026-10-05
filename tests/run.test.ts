@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test"
+import { realpathSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { runCommand } from "../src/stats/run"
 
 const node = (code: string) => ["-e", code] as const
@@ -7,6 +9,22 @@ const opts = { timeoutMs: 5000, maxBytes: 1024 }
 describe("runCommand", () => {
   test("resolves stdout", async () => {
     expect(await runCommand(process.execPath, node("process.stdout.write('hello')"), opts)).toBe("hello")
+  })
+
+  test("multibyte characters split across chunks are decoded intact", async () => {
+    const code = "process.stdout.write(Buffer.from([0xc3])); setTimeout(() => process.stdout.write(Buffer.from([0xa9])), 50)"
+    expect(await runCommand(process.execPath, node(code), opts)).toBe("é")
+  })
+
+  test("overflow counts bytes, not characters", async () => {
+    const err = await runCommand(process.execPath, node("process.stdout.write('é'.repeat(60))"), { ...opts, maxBytes: 100 }).catch((e) => e)
+    expect(err.message).toMatch(/output exceeded 100 bytes/)
+  })
+
+  test("env and cwd are passed to the child", async () => {
+    const code = "process.stdout.write(process.env.ONLY + ' ' + process.cwd())"
+    const out = await runCommand(process.execPath, node(code), { ...opts, env: { ONLY: "yes" }, cwd: tmpdir() })
+    expect(out).toBe(`yes ${realpathSync(tmpdir())}`)
   })
 
   test("spawn error keeps ENOENT code", async () => {
