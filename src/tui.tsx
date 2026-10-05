@@ -1,4 +1,4 @@
-import { createSignal, onCleanup } from "solid-js"
+import { onCleanup } from "solid-js"
 import type { Plugin } from "@opencode/plugin/tui"
 import { DetailsView } from "./details-view"
 import { createCollector } from "./stats/collect"
@@ -31,10 +31,14 @@ export function createPlugin(makeCollector: () => Collector = createCollector) {
     setup(context) {
       const options = parseOptions(context.options)
       const collector = makeCollector()
-      const [stats, setStats] = createSignal<SystemStats>(EMPTY)
+      const [store, update] = context.storage.memory("stats", { initial: { stats: EMPTY } })
+      const stats = () => store.stats
       const poller = createPoller({
         collect: (signal) => collector.collect(signal),
-        publish: setStats,
+        publish: (next) =>
+          update((draft) => {
+            draft.stats = next
+          }),
         intervalMs: options.refreshMs,
         primeMs: PRIME_MS,
         onError: (error) => console.error(`[${ID}] poll failed:`, error),

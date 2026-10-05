@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test"
 import { createSignal, Show } from "solid-js"
+import { createStore, produce } from "solid-js/store"
 import { testRender } from "@opentui/solid"
 import type { Plugin } from "@opencode/plugin/tui"
 import { DETAILS_COMMAND, createPlugin } from "../src/tui"
@@ -14,7 +15,21 @@ const theme = themeOf()
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 
-function host() {
+function memoryStorage() {
+  const stores = new Map<string, unknown>()
+  return {
+    memory<Value extends object>(key: string, options: { initial: Value }) {
+      const found = stores.get(key)
+      if (found) return found
+      const [store, set] = createStore(options.initial)
+      const entry = [store, (mutation: (draft: Value) => void) => set(produce(mutation))] as const
+      stores.set(key, entry)
+      return entry
+    },
+  }
+}
+
+function host(storage = memoryStorage(), collect?: () => Promise<SystemStats>) {
   const state = {
     collects: 0,
     signals: [] as AbortSignal[],
@@ -28,12 +43,13 @@ function host() {
     collect: async (signal?: AbortSignal) => {
       state.collects++
       if (signal) state.signals.push(signal)
-      return fullStats as SystemStats
+      return collect ? collect() : fullStats
     },
   }))
   const context = {
     options: { refreshMs: 60_000 },
     theme,
+    storage,
     keymap: { layer: (input: () => Layer) => state.layers.push(input) },
     ui: {
       slot: (claim: Claim) => {
@@ -111,5 +127,22 @@ describe("plugin lifecycle", () => {
     dialog.renderer.destroy()
     expect(frame).toContain("System monitor")
     expect(frame).toContain("RAM   8.9 / 15.9 GiB · 56%")
+  })
+
+  test("the last sample survives a plugin reload through storage.memory", async () => {
+    const storage = memoryStorage()
+    const first = host(storage)
+    const cleanup = await first.plugin.setup(first.context)
+    const a = await testRender(() => first.state.claims[0]!.render({ sessionID: "s" }) as never, { width: 40, height: 8 })
+    await settle()
+    a.renderer.destroy()
+    if (typeof cleanup === "function") await cleanup()
+
+    const second = host(storage, () => new Promise(() => undefined))
+    await second.plugin.setup(second.context)
+    const b = await testRender(() => second.state.claims[0]!.render({ sessionID: "s" }) as never, { width: 40, height: 8 })
+    destroy = () => b.renderer.destroy()
+    await b.renderOnce()
+    expect(b.captureCharFrame()).toContain("CPU   30%")
   })
 })
