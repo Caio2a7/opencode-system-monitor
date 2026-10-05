@@ -32,8 +32,9 @@ CI runs typecheck, tests, build and the real-machine smoke test (`bun run smoke`
 
 ## Local testing in OpenCode
 
-Run `bun install && bun run build`, add the checkout's absolute path to the `plugins` array of
-`~/.config/opencode/cli.json` (see the README) and restart OpenCode.
+Run `bun install`, add the checkout's absolute path to the `plugins` array of `~/.config/opencode/cli.json` (see the
+README) and restart OpenCode. A local path loads the root `tui.tsx`, which OpenCode compiles itself, so no build is
+needed; `bun run build` is only for the published `dist/tui.js`.
 
 ## Release process
 

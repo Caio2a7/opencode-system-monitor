@@ -116,9 +116,11 @@ The plugin runs on Linux, macOS and Windows; the package installs on any OS.
 | RAM           | `/proc/meminfo` (MemTotal − MemAvailable); inside a container with a lower cgroup memory limit, usage − inactive file cache over that limit | `vm_stat` active + wired + compressed pages    | total − available physical memory                                                                |
 | Swap          | `/proc/meminfo`                          | `sysctl -n vm.swapusage`, at most every 10 s   | page file usage via PowerShell `Get-CimInstance Win32_PageFileUsage`, refreshed at most every 30 s |
 | Disk          | `statfs("/")`                            | `statfs("/")`, APFS container used / size      | `statfs` of the system drive (`%SystemDrive%`, default `C:\`)                                    |
-| GPU/VRAM/temp | `nvidia-smi`, skipped while the dGPU is runtime-suspended (`off`) | not available (cells hidden)                   | `nvidia-smi` (NVIDIA drivers)                                                                    |
+| GPU/VRAM/temp | `nvidia-smi`, skipped while the dGPU is runtime-suspended (`off`) | not available (cells hidden)                   | `nvidia-smi` from `System32`, `NVSMI` or an absolute `PATH` entry                                |
 
 Other platforms (e.g. FreeBSD) are best effort: CPU and RAM via Node's `os` module, swap hidden, disk `/`.
+
+Metrics are only collected while the card (or the `/sysmon` dialog) is on screen.
 
 ## How the bars are colored
 
@@ -150,6 +152,12 @@ The card title keeps "System" in the theme text color; only the GPU temperature 
 - Child processes are spawned with fixed argument lists, `shell: false`, a 3 s timeout (10 s for PowerShell) and a 64 KiB output cap:
   `nvidia-smi` (Linux, Windows), `vm_stat` and `sysctl -n vm.swapusage` (macOS), and
   `powershell.exe -NoProfile -NonInteractive -Command <constant script>` (Windows, at most every 30 s).
+- Executables are resolved to absolute paths only (fixed system locations such as `/usr/bin/vm_stat` or
+  `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`, or absolute `PATH` entries), never from the current
+  directory or relative `PATH` entries, and run from their own directory.
+- Child processes get an allowlisted environment (`PATH`, system directories, locale `C`); API keys and other
+  variables of the OpenCode process are not passed on.
+- Text coming from child processes (error messages, GPU name) has ANSI sequences and control characters removed.
 - Zero runtime dependencies.
 - v0.1.0 was published manually; releases from v0.1.1 onward are published from GitHub Actions via npm trusted publishing (OIDC) with provenance.
 
