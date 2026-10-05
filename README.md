@@ -109,8 +109,8 @@ No color is hard-coded; everything is derived from the active OpenCode theme.
 
 | Metric        | Below 65%                                          | From 65%                                                        |
 | ------------- | -------------------------------------------------- | --------------------------------------------------------------- |
-| CPU, RAM      | fades `success` → base text color                  | yellow (`syntax.type`) → orange (`warning`) at 80% → red (`error`) at 92%+ |
-| GPU, VRAM     | fades purple (`syntax.keyword`) → pink (purple mixed with `error`) | same yellow → orange → red scale                       |
+| CPU, RAM      | fades `success` → yellow, reaching it at 65%       | yellow (`syntax.type`) → orange (`warning`) at 80% → red (`error`) at 92%+ |
+| GPU, VRAM     | fades purple (`syntax.keyword`) → pink (purple mixed with `error`) at 32.5% → yellow at 65% | same yellow → orange → red scale                       |
 | DISK          | base text color                                    | same yellow → orange → red scale                                |
 | NET           | always the `info` color                            | always the `info` color                                         |
 

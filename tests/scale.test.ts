@@ -5,6 +5,7 @@ import {
   TEMP_WARN,
   USAGE_CRIT,
   USAGE_HIGH,
+  USAGE_MID,
   USAGE_WARN,
   lerp,
   tempColor,
@@ -48,20 +49,21 @@ describe("lerp", () => {
 })
 
 describe("usageColor below the high threshold", () => {
-  test("cpu/ram go success → base", () => {
+  test("cpu/ram go success → yellow", () => {
     for (const kind of ["cpu", "ram"] as const) {
       expect(usageColor(c, kind, 0)).toBe(c.success)
-      expect(usageColor(c, kind, 30)).toBe(lerp(c.success, c.base, 30 / 65))
-      expect(usageColor(c, kind, 64)).toBe(lerp(c.success, c.base, 64 / 65))
+      expect(usageColor(c, kind, 30)).toBe(lerp(c.success, c.yellow, 30 / 65))
+      expect(usageColor(c, kind, 64)).toBe(lerp(c.success, c.yellow, 64 / 65))
     }
-    expect(usageColor(c, "cpu", 32.5)).toBe("#80ff80")
   })
 
-  test("gpu/vram go purple → pink", () => {
+  test("gpu/vram go purple → pink (32.5) → yellow (65)", () => {
     for (const kind of ["gpu", "vram"] as const) {
       expect(usageColor(c, kind, 0)).toBe(c.purple)
-      expect(usageColor(c, kind, 30)).toBe(lerp(c.purple, c.pink, 30 / 65))
-      expect(usageColor(c, kind, 64)).toBe(lerp(c.purple, c.pink, 64 / 65))
+      expect(usageColor(c, kind, USAGE_MID)).toBe(c.pink)
+      expect(usageColor(c, kind, 50)).toBe(lerp(c.pink, c.yellow, (50 - 32.5) / 32.5))
+      expect(usageColor(c, kind, 64)).toBe(lerp(c.pink, c.yellow, (64 - 32.5) / 32.5))
+      expect(usageColor(c, kind, 65)).toBe(c.yellow)
     }
   })
 
@@ -69,9 +71,9 @@ describe("usageColor below the high threshold", () => {
     for (const v of [0, 30, 46, 64]) expect(usageColor(c, "disk", v)).toBe(c.base)
   })
 
-  test("RAM at 56% is a calm green→white blend, not warning-ish", () => {
+  test("RAM at 56% is a green→yellow blend, not warning-ish", () => {
     const got = usageColor(c, "ram", 56)
-    expect(got).toBe(lerp(c.success, c.base, 56 / 65))
+    expect(got).toBe(lerp(c.success, c.yellow, 56 / 65))
     expect(got).not.toBe(c.warning)
     expect(got).not.toBe(c.yellow)
   })
@@ -104,7 +106,7 @@ describe("usageColor at and above the high threshold", () => {
   })
 
   test("values just under 65 are not yet yellow", () => {
-    expect(usageColor(c, "cpu", 64.9)).not.toBe(c.yellow)
+    expect(usageColor(c, "cpu", 60)).not.toBe(c.yellow)
   })
 })
 

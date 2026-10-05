@@ -2,6 +2,7 @@ import type { Color, MetricKind, Palette, ThemeColor } from "./types"
 
 // Theme-derived color scales: linear interpolation between theme tokens.
 export const USAGE_HIGH = 65
+export const USAGE_MID = USAGE_HIGH / 2
 export const USAGE_WARN = 80
 export const USAGE_CRIT = 92
 export const TEMP_WARN = 60
@@ -44,16 +45,17 @@ function stops(points: [Stop, ...Stop[]], v: number): string {
   return lerp(c0, c1, (v - x0) / (x1 - x0))
 }
 
-function lowRange(c: Palette, kind: MetricKind): [Color, Color] {
+/** Color below USAGE_HIGH; every scale ends continuous with yellow at 65. */
+function lowColor(c: Palette, kind: MetricKind, v: number): string {
   switch (kind) {
     case "cpu":
     case "ram":
-      return [c.success, c.base]
+      return lerp(c.success, c.yellow, v / USAGE_HIGH)
     case "gpu":
     case "vram":
-      return [c.purple, c.pink]
+      return stops([[0, c.purple], [USAGE_MID, c.pink], [USAGE_HIGH, c.yellow]], v)
     case "disk":
-      return [c.base, c.base]
+      return lerp(c.base, c.base, 0)
   }
 }
 
@@ -65,8 +67,7 @@ export function usageColor(colors: Palette, kind: MetricKind, value: number): Co
       value,
     )
   }
-  const [start, end] = lowRange(colors, kind)
-  return lerp(start, end, value / USAGE_HIGH)
+  return lowColor(colors, kind, value)
 }
 
 /** Temperature: neutral below 60 °C; 60 yellow -> 75 orange -> 85 red. */
