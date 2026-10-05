@@ -20,7 +20,12 @@ export function runCommand(file: string, args: readonly string[], opts: RunOptio
   const { timeoutMs, maxBytes, signal } = opts
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(abortError(file))
-    const child = spawn(file, [...args], { stdio: ["ignore", "pipe", "pipe"], shell: false, windowsHide: true })
+    const child = spawn(file, [...args], {
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: false,
+      windowsHide: true,
+      env: { ...process.env, LC_ALL: "C", LANG: "C" },
+    })
     const outChunks: Buffer[] = []
     const errChunks: Buffer[] = []
     let outBytes = 0

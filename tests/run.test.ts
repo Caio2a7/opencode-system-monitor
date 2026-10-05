@@ -84,6 +84,12 @@ describe("runCommand", () => {
     expect(err.message).toMatch(/output exceeded 100 bytes/)
   })
 
+  test("enforces LC_ALL=C and LANG=C in child environment", async () => {
+    const code = "process.stdout.write(`${process.env.LC_ALL}:${process.env.LANG}`)"
+    const out = await runCommand(process.execPath, node(code), opts)
+    expect(out).toBe("C:C")
+  })
+
   test("timeout settles promptly even if a grandchild inherits stdout/stderr pipes", async () => {
     const code = `
       const { spawn } = require("node:child_process");
