@@ -43,8 +43,10 @@ function startChild(file: string, args: readonly string[], opts: RunOptions): Ch
       env: opts.env,
       cwd: opts.cwd,
     })
+    let spawned = false
+    child.once("spawn", () => (spawned = true))
     child.once("exit", exit)
-    child.once("error", () => child.pid === undefined && exit())
+    child.once("error", () => (!spawned || child.exitCode !== null) && exit())
     return child
   } catch (err) {
     exit()
