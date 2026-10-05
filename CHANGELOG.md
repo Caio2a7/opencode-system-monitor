@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+
+- `/sysmon` slash command and **System monitor details** palette entry: a live dialog with used/total GiB for RAM, swap, disk and VRAM, the GPU name and temperature, and the error behind every missing metric.
+
 ### Security
 
 - System tools are spawned by absolute path (fixed system locations or absolute `PATH` entries only), from their own directory and with an allowlisted environment. Before, a `nvidia-smi.exe` or `powershell.exe` inside the opened project ran on Windows, and API keys were inherited by every child process.

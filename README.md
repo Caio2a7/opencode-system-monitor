@@ -31,6 +31,8 @@ puts a small resource monitor (think btop or htop, reduced to six lines) right n
 - Works on Linux, macOS and Windows (see [Platform support](#platform-support)).
 - CPU, RAM, DISK (root filesystem, or the system drive on Windows), GPU utilization, VRAM and SWAP usage bars.
 - GPU temperature in the card title, colored by temperature while "System" keeps the theme text color.
+- `/sysmon` (or **System monitor details** in the command palette, `ctrl+p`) opens a live dialog with used and total
+  GiB for RAM, swap, disk and VRAM, the GPU name and temperature, and the reason behind any `—` cell.
 - Refreshes every 2 seconds by default (`refreshMs`, 500–60000), only while the card is on screen.
 - Colors come entirely from the active OpenCode theme; theme changes apply live.
 - Without `nvidia-smi` (and always on macOS) the GPU and VRAM cells disappear and the second row shows only SWAP.
@@ -157,6 +159,7 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 | Symptom                              | Fix                                                                                        |
 | ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| A cell shows `—`                     | Run `/sysmon`: the details dialog lists the error behind each missing metric.             |
 | Nothing in the sidebar               | Open a session, widen the terminal and check that the sidebar is visible.                  |
 | Plugin not loaded                    | Make sure it is listed in `~/.config/opencode/cli.json` (V2), then restart the TUI.        |
 | No GPU or VRAM cells                 | Expected without `nvidia-smi`, and always on macOS; the second row shows only SWAP.        |
