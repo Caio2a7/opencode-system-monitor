@@ -12,6 +12,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Security
 
+- Release workflow: build and tests run in a job without publish rights, the OIDC token is only available to a job that publishes the built `dist/` with `--ignore-scripts`, npm is pinned (11.21.0) and every action is pinned to a commit SHA in CI and release.
 - System tools are spawned by absolute path (fixed system locations or absolute `PATH` entries only), from their own directory and with an allowlisted environment. Before, a `nvidia-smi.exe` or `powershell.exe` inside the opened project ran on Windows, and API keys were inherited by every child process.
 
 ### Changed

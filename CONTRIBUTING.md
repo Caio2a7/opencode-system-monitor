@@ -44,7 +44,9 @@ Then:
 1. Bump `version` in `package.json`.
 2. Move the `CHANGELOG.md` entries under the new version heading with the release date.
 3. Commit to `main`, then tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-4. GitHub Actions publishes to npm with provenance (from v0.1.1 onward; v0.1.0 was published manually).
+4. GitHub Actions publishes to npm with provenance (from v0.1.1 onward; v0.1.0 was published manually). The `build`
+   job installs, tests and builds without publish rights; only the `publish` job gets the OIDC token, and it runs
+   `npm publish --ignore-scripts` on the uploaded `dist/` without installing dependencies.
 
 The tag must point to a commit on `main` (otherwise the release workflow fails) and must equal the `package.json`
 version.
