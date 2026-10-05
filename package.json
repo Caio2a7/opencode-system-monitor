@@ -1,7 +1,7 @@
 {
   "name": "opencode-system-monitor",
   "version": "0.1.0",
-  "description": "System monitor for the OpenCode TUI sidebar: live CPU, RAM, disk, NVIDIA GPU, VRAM and network usage bars that follow your OpenCode theme.",
+  "description": "System monitor for the OpenCode TUI sidebar: live CPU, RAM, swap, disk, NVIDIA GPU and VRAM usage bars that follow your OpenCode theme.",
   "type": "module",
   "license": "MIT",
   "author": "Caio2a7 <caiodanielfonseca@gmail.com>",
@@ -30,7 +30,7 @@
     "gpu",
     "nvidia",
     "vram",
-    "network",
+    "swap",
     "btop",
     "tui",
     "terminal",

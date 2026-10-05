@@ -1,6 +1,6 @@
 # opencode-system-monitor
 
-**A system monitor plugin for the OpenCode TUI sidebar — live CPU, RAM, disk, NVIDIA GPU, VRAM and network usage bars, btop-style, themed by your OpenCode theme.**
+**A system monitor plugin for the OpenCode TUI sidebar — live CPU, RAM, disk, NVIDIA GPU, VRAM and swap usage bars, btop-style, themed by your OpenCode theme.**
 
 [![npm version](https://img.shields.io/npm/v/opencode-system-monitor.svg)](https://www.npmjs.com/package/opencode-system-monitor)
 [![npm downloads](https://img.shields.io/npm/dm/opencode-system-monitor.svg)](https://www.npmjs.com/package/opencode-system-monitor)
@@ -15,7 +15,7 @@ resource usage, so you can see what your machine is doing while an agent works, 
 ╭─ System · 62° ──────────────────╮
 │ CPU   38%  RAM   61%  DISK  72% │
 │ ━━━╸─────  ━━━━━╸───  ━━━━━━╸── │
-│ GPU   89%  VRAM  58%  NET  3.4M │
+│ GPU   89%  VRAM  58%  SWAP  12% │
 │ ━━━━━━━━─  ━━━━━────  ━━━━───── │
 ╰─────────────────────────────────╯
 ```
@@ -27,11 +27,11 @@ puts a small resource monitor (think btop or htop, reduced to six lines) right n
 
 ## Features
 
-- CPU, RAM, DISK (root filesystem `/`), GPU utilization, VRAM and NET download rate bars.
-- GPU temperature in the card title.
+- CPU, RAM, DISK (root filesystem `/`), GPU utilization, VRAM and SWAP usage bars.
+- GPU temperature in the card title, colored by temperature while "System" keeps the theme text color.
 - Refreshes every 2 seconds by default (`refreshMs`, 500–60000).
 - Colors come entirely from the active OpenCode theme; theme changes apply live.
-- Without `nvidia-smi` the GPU and VRAM cells disappear and the second row shows only NET.
+- Without `nvidia-smi` the GPU and VRAM cells disappear and the second row shows only SWAP.
 - Zero runtime dependencies, no network requests, no telemetry.
 
 ## Requirements
@@ -97,10 +97,9 @@ The plugin samples the system on a timer and renders a 31-column card inside a r
 | DISK | usage  | `statfs("/")`, `df` formula                                                               |
 | GPU  | usage  | `nvidia-smi` utilization                                                                  |
 | VRAM | usage  | `nvidia-smi` memory                                                                       |
-| NET  | rate   | `/proc/net/dev`, download rate of physical interfaces                                     |
+| SWAP | usage  | `/proc/meminfo` (`SwapTotal`, `SwapFree`), same read as RAM                                |
 
-NET ignores `lo`, `docker*`, `veth*`, `br-*`, `virbr*`, `tun*`, `tap*` and `wg*`. Its bar is relative to the peak of the
-last 30 samples (30 × `refreshMs`, ~60 seconds at the default), with a 1 MiB/s floor so idle noise does not fill the bar. The GPU temperature is shown in the card
+SWAP shows `—` when the system has no swap. The GPU temperature is shown in the card
 title (` System · 62° `).
 
 ## How the bars are colored
@@ -109,12 +108,11 @@ No color is hard-coded; everything is derived from the active OpenCode theme.
 
 | Metric        | Below 65%                                          | From 65%                                                        |
 | ------------- | -------------------------------------------------- | --------------------------------------------------------------- |
-| CPU, RAM      | fades `success` → yellow, reaching it at 65%       | yellow (`syntax.type`) → orange (`warning`) at 80% → red (`error`) at 92%+ |
+| CPU, RAM, SWAP | fades `success` → yellow, reaching it at 65%       | yellow (`syntax.type`) → orange (`warning`) at 80% → red (`error`) at 92%+ |
 | GPU, VRAM     | fades purple (`syntax.keyword`) → pink (purple mixed with `error`) at 32.5% → yellow at 65% | same yellow → orange → red scale                       |
 | DISK          | base text color                                    | same yellow → orange → red scale                                |
-| NET           | always the `info` color                            | always the `info` color                                         |
 
-GPU temperature colors the card title:
+The card title keeps "System" in the theme text color; only the GPU temperature is colored:
 
 | Temperature | Color  |
 | ----------- | ------ |
@@ -126,7 +124,7 @@ GPU temperature colors the card title:
 ## Privacy & security
 
 - No network requests and no telemetry.
-- No shell. The plugin reads `/proc/stat`, `/proc/meminfo`, `/proc/net/dev` and `statfs("/")`.
+- No shell. The plugin reads `/proc/stat`, `/proc/meminfo` and `statfs("/")`.
 - The only subprocess is `nvidia-smi`, spawned with a fixed argument list (no shell) and a 3 s timeout.
 - Zero runtime dependencies.
 - Published to npm with provenance from GitHub Actions.
@@ -139,7 +137,7 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 | ------------------------------------ | ------------------------------------------------------------------------------------------ |
 | Nothing in the sidebar               | Open a session, widen the terminal and check that the sidebar is visible.                  |
 | Plugin not loaded                    | Make sure it is listed in `~/.config/opencode/cli.json` (V2), then restart the TUI.        |
-| No GPU or VRAM cells                 | Expected without `nvidia-smi`; the second row shows only NET.                              |
+| No GPU or VRAM cells                 | Expected without `nvidia-smi`; the second row shows only SWAP.                             |
 | GPU and VRAM show `—`                | `nvidia-smi` is installed but failed or timed out (3 s). Run it in the same terminal.      |
 | macOS or Windows                     | Not supported; the plugin reads Linux `/proc`.                                             |
 | OpenCode V1 (`tui.json`)             | Not supported; use OpenCode V2.                                                            |
