@@ -106,7 +106,7 @@ title (` System · 62° `).
 
 ## Platform support
 
-The plugin runs on Linux, macOS and Windows (package `os`: `linux`, `darwin`, `win32`).
+The plugin runs on Linux, macOS and Windows; the package installs on any OS.
 
 | Metric        | Linux                                    | macOS                                          | Windows                                                                                          |
 | ------------- | ---------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------ |

@@ -10,6 +10,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 - System tools are spawned by absolute path (fixed system locations or absolute `PATH` entries only), from their own directory and with an allowlisted environment. Before, a `nvidia-smi.exe` or `powershell.exe` inside the opened project ran on Windows, and API keys were inherited by every child process.
 
+### Changed
+
+- The package no longer restricts `os`, so the documented best-effort platforms (e.g. FreeBSD) can install it.
+
 ### Fixed
 
 - Child process output is decoded after all bytes arrive, so multibyte characters split across chunks are no longer corrupted.

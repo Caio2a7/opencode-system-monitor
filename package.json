@@ -74,11 +74,6 @@
   "engines": {
     "node": ">=20"
   },
-  "os": [
-    "linux",
-    "darwin",
-    "win32"
-  ],
   "publishConfig": {
     "access": "public",
     "provenance": true
