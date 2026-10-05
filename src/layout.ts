@@ -61,15 +61,15 @@ export function gridRows(colors: Palette, stats: SystemStats): Cell[][] {
   return [first, [...second, usageCell(colors, "SWAP", "swap", stats.swap?.percent ?? null)]]
 }
 
-export function titleText(stats: SystemStats): string {
+/** Title pieces: the label stays in the base text color, only the GPU temperature follows tempColor. */
+export function titleSegments(colors: Palette, stats: SystemStats): Segment[] {
   const temp = gpuOf(stats)?.temp
-  return known(temp) ? ` System · ${Math.round(temp)}° ` : " System "
-}
-
-/** Title color follows the GPU temperature (neutral below 60 °C). */
-export function titleColor(colors: Palette, stats: SystemStats): Color {
-  const temp = gpuOf(stats)?.temp
-  return known(temp) ? tempColor(colors, temp) : colors.muted
+  if (!known(temp)) return [seg(" System ", colors.base)]
+  return [
+    seg(" System ·", colors.base),
+    seg(` ${Math.round(temp)}°`, tempColor(colors, temp)),
+    seg(" ", colors.base),
+  ]
 }
 
 const flat = (segs: Segment[]): string => segs.map((s) => s.text).join("")

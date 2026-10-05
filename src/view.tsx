@@ -1,10 +1,9 @@
 import { For } from "solid-js"
-import type { Plugin } from "@opencode/plugin/tui"
-import { CELL_GAP, CELL_WIDTH, gridRows, titleColor, titleText } from "./layout"
+import { CELL_GAP, CELL_WIDTH, gridRows, titleSegments } from "./layout"
 import { palette } from "./palette"
 import type { Cell, Segment, SystemStats } from "./types"
 
-type Theme = Plugin.Context["theme"]
+const NBSP = "\u00a0"
 
 function Line(props: { segments: Segment[] }) {
   return (
@@ -25,28 +24,32 @@ function CellView(props: { cell: Cell }) {
   )
 }
 
-/** Bordered grid panel; the theme is read at render time so theme switches apply live. */
-export function MonitorView(props: { theme: Theme; stats: () => SystemStats }) {
+// The native `title` prop takes one plain string with one color, so the title is a text overlay on the top border row.
+// Plain spaces are transparent cells that would let the border line show through, so they become no-break spaces.
+// The wrapper has no border, so `top: 0` is the border row of the inner box; `left: 2` sits after the corner and dash.
+function Title(props: { segments: Segment[] }) {
+  return (
+    <text position="absolute" top={0} left={2}>
+      <For each={props.segments}>{(s) => <span style={{ fg: s.fg }}>{s.text.replaceAll(" ", NBSP)}</span>}</For>
+    </text>
+  )
+}
+
+/** Bordered grid panel; `theme` is the host theme (narrowed by palette()), read at render time so switches apply live. */
+export function MonitorView(props: { theme: unknown; stats: () => SystemStats }) {
   const colors = () => palette(props.theme)
   return (
-    <box
-      border
-      borderStyle="rounded"
-      borderColor={colors().border}
-      title={titleText(props.stats())}
-      titleColor={titleColor(colors(), props.stats())}
-      titleAlignment="left"
-      paddingX={1}
-      paddingY={0}
-      gap={0}
-    >
-      <For each={gridRows(colors(), props.stats())}>
-        {(row) => (
-          <box flexDirection="row" gap={CELL_GAP}>
-            <For each={row}>{(c) => <CellView cell={c} />}</For>
-          </box>
-        )}
-      </For>
+    <box>
+      <box border borderStyle="rounded" borderColor={colors().border} paddingX={1} paddingY={0} gap={0}>
+        <For each={gridRows(colors(), props.stats())}>
+          {(row) => (
+            <box flexDirection="row" gap={CELL_GAP}>
+              <For each={row}>{(c) => <CellView cell={c} />}</For>
+            </box>
+          )}
+        </For>
+      </box>
+      <Title segments={titleSegments(colors(), props.stats())} />
     </box>
   )
 }

@@ -5,8 +5,7 @@ import {
   barSegments,
   gridRows,
   gridText,
-  titleColor,
-  titleText,
+  titleSegments,
 } from "../src/layout"
 import { tempColor, usageColor } from "../src/scale"
 import type { Segment, SystemStats } from "../src/types"
@@ -151,25 +150,29 @@ describe("gridText", () => {
   })
 })
 
-describe("title", () => {
+describe("titleSegments", () => {
+  const text = (segs: Segment[]) => segs.map((s) => s.text).join("")
+  const withTemp = (temp: number | null) => withGpu({ ...(fullStats.gpu as object), temp } as SystemStats["gpu"])
+
   test("shows the rounded GPU temperature when known", () => {
-    expect(titleText(fullStats)).toBe(" System · 62° ")
-    expect(titleText(withGpu({ ...(fullStats.gpu as object), temp: 61.6 } as SystemStats["gpu"]))).toBe(
-      " System · 62° ",
-    )
+    expect(text(titleSegments(c, fullStats))).toBe(" System · 62° ")
+    expect(text(titleSegments(c, withTemp(61.6)))).toBe(" System · 62° ")
   })
 
-  test("plain title for gpu null, error, or unknown temperature", () => {
-    expect(titleText(withGpu(null))).toBe(" System ")
-    expect(titleText(withGpu({ error: "x" }))).toBe(" System ")
-    expect(titleText(withGpu({ ...(fullStats.gpu as object), temp: null } as SystemStats["gpu"]))).toBe(" System ")
+  test("plain base-colored title for gpu null, error, or unknown temperature", () => {
+    for (const stats of [withGpu(null), withGpu({ error: "x" }), withTemp(null)]) {
+      expect(titleSegments(c, stats)).toEqual([{ text: " System ", fg: c.base, bold: false }])
+    }
   })
 
-  test("title color follows tempColor, muted otherwise", () => {
-    expect(titleColor(c, fullStats)).toBe(tempColor(c, 62))
-    expect(titleColor(c, withGpu(null))).toBe(c.muted)
-    expect(titleColor(c, withGpu({ error: "x" }))).toBe(c.muted)
-    const cool = withGpu({ ...(fullStats.gpu as object), temp: 40 } as SystemStats["gpu"])
-    expect(titleColor(c, cool)).toBe(c.muted)
+  test("only the temperature follows tempColor; the label stays base", () => {
+    const segs = titleSegments(c, fullStats)
+    expect(segs.filter((s) => s.fg === tempColor(c, 62)).map((s) => s.text)).toEqual([" 62°"])
+    expect(segs.filter((s) => s.fg !== tempColor(c, 62)).every((s) => s.fg === c.base)).toBe(true)
+  })
+
+  test("cool temperatures are muted, hot ones red", () => {
+    expect(titleSegments(c, withTemp(40))[1]!.fg).toBe(c.muted)
+    expect(titleSegments(c, withTemp(90))[1]!.fg).toBe(c.error)
   })
 })
