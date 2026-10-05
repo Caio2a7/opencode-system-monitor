@@ -105,6 +105,14 @@ describe("createToolRunner", () => {
     expect(calls.checked.every((p) => p.startsWith("/"))).toBe(true)
   })
 
+  test("PowerShell gets 10 s for its cold start, other tools 3 s", async () => {
+    const { host, calls } = fakeHost({ platform: "win32", env: WIN_ENV, isExecutable: async () => true })
+    const run = createToolRunner(host)
+    await run("powershell", [])
+    await run("nvidia-smi", [])
+    expect(calls.exec.map(([, , o]) => o.timeoutMs)).toEqual([10_000, 3000])
+  })
+
   test("resolution is cached", async () => {
     const { host, calls } = fakeHost()
     const run = createToolRunner(host)

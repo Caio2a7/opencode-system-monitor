@@ -142,7 +142,7 @@ The card title keeps "System" in the theme text color; only the GPU temperature 
 
 - No network requests and no telemetry.
 - No shell. Metrics come from `/proc` (Linux), Node's `os` module and `statfs`.
-- Child processes are spawned with fixed argument lists, `shell: false`, a 3 s timeout and a 64 KiB output cap:
+- Child processes are spawned with fixed argument lists, `shell: false`, a 3 s timeout (10 s for PowerShell) and a 64 KiB output cap:
   `nvidia-smi` (Linux, Windows), `vm_stat` and `sysctl -n vm.swapusage` (macOS), and
   `powershell.exe -NoProfile -NonInteractive -Command <constant script>` (Windows, at most every 30 s).
 - Zero runtime dependencies.
@@ -159,7 +159,7 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 | No GPU or VRAM cells                 | Expected without `nvidia-smi`, and always on macOS; the second row shows only SWAP.        |
 | GPU and VRAM show `—`                | `nvidia-smi` is installed but failed or timed out (3 s). Run it in the same terminal.      |
 | Windows swap missing at start        | Swap appears up to 30 s after start (PowerShell query is throttled).                       |
-| SWAP shows `—` on Windows            | PowerShell may be blocked by execution policy; swap is hidden, other metrics still work.   |
+| SWAP shows `—` on Windows            | PowerShell is blocked (AppLocker, GPO) or took over 10 s; swap is hidden, other metrics still work. |
 | OpenCode V1 (`tui.json`)             | Not supported; use OpenCode V2.                                                            |
 
 Plugin load errors are logged to `~/.local/share/opencode/log/opencode.log`.

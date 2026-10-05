@@ -16,6 +16,7 @@ export interface ToolHost {
 export type ToolRunner = (tool: Tool, args: readonly string[], signal?: AbortSignal) => Promise<string>
 
 const TIMEOUT_MS = 3000
+const TOOL_TIMEOUT_MS: Partial<Record<Tool, number>> = { powershell: 10_000 }
 const MAX_OUTPUT_BYTES = 64 * 1024
 
 const POSIX_ENV = ["PATH", "HOME", "TMPDIR", "LD_LIBRARY_PATH"]
@@ -130,7 +131,8 @@ export function createToolRunner(host: ToolHost): ToolRunner {
     const file = await resolve(tool)
     const cwd = pathApi(host.platform).dirname(file)
     try {
-      return await host.exec(file, args, { timeoutMs: TIMEOUT_MS, maxBytes: MAX_OUTPUT_BYTES, signal, env, cwd })
+      const timeoutMs = TOOL_TIMEOUT_MS[tool] ?? TIMEOUT_MS
+      return await host.exec(file, args, { timeoutMs, maxBytes: MAX_OUTPUT_BYTES, signal, env, cwd })
     } catch (err) {
       if (hasCode(err, "ENOENT")) resolved.delete(tool)
       throw err
