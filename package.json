@@ -1,7 +1,7 @@
 {
   "name": "opencode-system-monitor",
-  "version": "0.1.0",
-  "description": "System monitor for the OpenCode TUI sidebar: live CPU, RAM, swap, disk, NVIDIA GPU and VRAM usage bars that follow your OpenCode theme.",
+  "version": "0.2.0",
+  "description": "Cross-platform system monitor for the OpenCode TUI sidebar: live CPU, RAM, swap, disk, NVIDIA GPU and VRAM usage bars that follow your OpenCode theme. Linux, macOS and Windows.",
   "type": "module",
   "license": "MIT",
   "author": "Caio2a7 <caiodanielfonseca@gmail.com>",
@@ -34,7 +34,10 @@
     "btop",
     "tui",
     "terminal",
-    "linux"
+    "linux",
+    "macos",
+    "windows",
+    "cross-platform"
   ],
   "exports": {
     "./tui": "./dist/tui.js"
@@ -47,6 +50,7 @@
   ],
   "scripts": {
     "build": "bun scripts/build.ts",
+    "smoke": "bun scripts/smoke.ts",
     "prepack": "bun scripts/build.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit -p ."
@@ -71,7 +75,9 @@
     "node": ">=20"
   },
   "os": [
-    "linux"
+    "linux",
+    "darwin",
+    "win32"
   ],
   "publishConfig": {
     "access": "public",

@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-05
+
+### Added
+
+- macOS and Windows support (package `os`: `linux`, `darwin`, `win32`); other platforms are best effort.
+- Per-platform sources: CPU, RAM, swap and disk read from `/proc` (Linux), `os.cpus()` deltas, `vm_stat`, `sysctl -n vm.swapusage` (macOS) and `os.cpus()`, PowerShell `Win32_PageFileUsage` (Windows, refreshed at most every 30 s); disk uses `statfs` of `/` or the system drive. GPU, VRAM and temperature via `nvidia-smi` on Linux and Windows; hidden on macOS.
+- Real-machine smoke test (`bun run smoke`) and a CI matrix running typecheck, tests, build and smoke on Ubuntu, macOS and Windows.
+
+### Changed
+
+- Release workflow publishes via npm trusted publishing with provenance; the GitHub release step is idempotent.
+
 ## [0.1.0] - 2026-10-05
 
 ### Added
@@ -18,5 +30,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - `refreshMs` option (integer, 500–60000, default 2000).
 - npm publishing with provenance from GitHub Actions on `vX.Y.Z` tags.
 
-[Unreleased]: https://github.com/Caio2a7/opencode-system-monitor/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Caio2a7/opencode-system-monitor/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Caio2a7/opencode-system-monitor/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Caio2a7/opencode-system-monitor/releases/tag/v0.1.0
