@@ -14,6 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 - Child process output is decoded after all bytes arrive, so multibyte characters split across chunks are no longer corrupted.
 - macOS DISK measured the sealed system volume and showed a few percent on a full disk; it now reports the APFS container usage.
+- Linux CPU no longer counts `guest` and `guest_nice` twice (they are already included in `user` and `nice`), which inflated usage on hosts running VMs.
 
 ## [0.2.0] - 2026-10-05
 

@@ -16,11 +16,20 @@ export interface CpuTimes {
   total: number
 }
 
+const PROC_STAT_FIELDS = 8
+
+function aggregateCpuLine(procStat: string): string | null {
+  const start = procStat.startsWith("cpu ") ? 0 : procStat.indexOf("\ncpu ") + 1
+  if (start === 0 && !procStat.startsWith("cpu ")) return null
+  const end = procStat.indexOf("\n", start)
+  return procStat.slice(start, end === -1 ? undefined : end)
+}
+
 /** Parses the aggregate "cpu " line of /proc/stat; idle includes iowait. */
 export function parseCpuTimes(procStat: string): CpuTimes | null {
-  const line = procStat.split("\n").find((l) => l.startsWith("cpu "))
+  const line = aggregateCpuLine(procStat)
   if (!line) return null
-  const values = line.trim().split(/\s+/).slice(1).map(Number)
+  const values = line.trim().split(/\s+/).slice(1, 1 + PROC_STAT_FIELDS).map(Number)
   if (values.length === 0 || values.some((n) => !Number.isFinite(n))) return null
   return { idle: (values[3] ?? 0) + (values[4] ?? 0), total: values.reduce((a, b) => a + b, 0) }
 }

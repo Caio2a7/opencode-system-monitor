@@ -20,6 +20,14 @@ describe("parseCpuTimes", () => {
     expect(parseCpuTimes("cpu0 1 1 1 1 1\ncpu  10 0 0 20 5\n")).toEqual({ idle: 25, total: 35 })
   })
 
+  test("guest and guest_nice are already part of user and nice, so they are not added again", () => {
+    expect(parseCpuTimes("cpu  100 10 50 800 50 5 5 10 30 5\n")).toEqual({ idle: 850, total: 1030 })
+  })
+
+  test("reads only the aggregate line even when it is not followed by a newline", () => {
+    expect(parseCpuTimes("cpu  1 0 0 3 0")).toEqual({ idle: 3, total: 4 })
+  })
+
   test.each([["empty", ""], ["no cpu line", "intr 1\nctxt 2\n"], ["only per-core", "cpu0 1 2 3 4 5\n"]])(
     "returns null for %s",
     (_n, input) => expect(parseCpuTimes(input)).toBeNull(),
