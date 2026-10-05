@@ -1,6 +1,6 @@
-import { readFile, statfs } from "node:fs/promises"
+import { readdir, readFile, statfs } from "node:fs/promises"
 import { cpus, freemem, totalmem } from "node:os"
-import type { CpuStats, DiskStats, SystemStats } from "../types"
+import type { CpuStats, DiskStats, GpuResult, SystemStats } from "../types"
 import { createGpuProbe, SMI_ARGS } from "./gpu"
 import { cpuPercent, diskUsage } from "./parse"
 import type { CpuTimes } from "./parse"
@@ -18,6 +18,7 @@ const runTool = createToolRunner(defaultToolHost())
 
 const defaultDeps: CollectorDeps = {
   readText: (path) => readFile(path, "utf8"),
+  listDir: (path) => readdir(path),
   statfs: async (path) => {
     const s = await statfs(path)
     return { bsize: s.bsize, blocks: s.blocks, bfree: s.bfree, bavail: s.bavail }
@@ -62,7 +63,11 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
   const disk = async (): Promise<DiskStats | null> =>
     diskUsage(await deps.statfs(diskRoot(deps.platform, deps.env)), deps.platform === "darwin")
   const probe = createGpuProbe({ run: (signal) => deps.runSmi(signal), now: () => deps.now() })
-  const gpu = async (signal?: AbortSignal) => (source.hasGpu ? probe(signal) : null)
+  const gpu = async (signal?: AbortSignal): Promise<GpuResult> => {
+    if (!source.hasGpu) return null
+    if (await source.gpuSuspended?.().catch(() => false)) return { suspended: true }
+    return probe(signal)
+  }
 
   return {
     async collect(signal) {

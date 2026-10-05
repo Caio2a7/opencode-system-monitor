@@ -1,5 +1,6 @@
 import type { RamStats } from "../../types"
 import { cgroupRam, findCgroupMemory, type CgroupMemory } from "../cgroup"
+import { allSuspended, findNvidiaGpus } from "../nvidia-pm"
 import { parseCpuTimes, parseMeminfo, parseSwap } from "../parse"
 import type { CollectorDeps, StatsSource } from "./types"
 
@@ -7,6 +8,7 @@ const BYTES_PER_GIB = 1024 ** 3
 
 export function linuxSource(deps: CollectorDeps): StatsSource {
   let cgroup: Promise<CgroupMemory | null> | undefined
+  let gpus: Promise<string[]> | undefined
 
   const limited = async (host: RamStats): Promise<RamStats | null> => {
     cgroup ??= findCgroupMemory(deps.readText).catch(() => null)
@@ -18,6 +20,10 @@ export function linuxSource(deps: CollectorDeps): StatsSource {
     hasGpu: true,
     async cpuTimes() {
       return parseCpuTimes(await deps.readText("/proc/stat"))
+    },
+    async gpuSuspended() {
+      gpus ??= findNvidiaGpus(deps.readText, deps.listDir)
+      return allSuspended(deps.readText, await gpus)
     },
     async memory() {
       const meminfo = await deps.readText("/proc/meminfo")

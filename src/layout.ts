@@ -8,6 +8,7 @@ const BAR_CHAR = "━"
 const HALF_CHAR = "╸"
 const TRACK_CHAR = "─"
 const MISSING = "—"
+const OFF = "off"
 
 const known = (n: number | null | undefined): n is number => n != null && Number.isFinite(n)
 const clamp = (p: number): number => Math.max(0, Math.min(100, p))
@@ -42,7 +43,16 @@ function usageCell(colors: Palette, label: string, kind: MetricKind, percent: nu
   return cell(colors, label, accent, percent, percentValue(colors, percent, accent))
 }
 
+const offCell = (colors: Palette, label: string): Cell => cell(colors, label, colors.muted, null, seg(OFF, colors.muted))
+
 const gpuOf = (stats: SystemStats): GpuStats | null => (stats.gpu && "util" in stats.gpu ? stats.gpu : null)
+
+function gpuCells(colors: Palette, stats: SystemStats): Cell[] {
+  if (!stats.gpu) return []
+  if ("suspended" in stats.gpu) return [offCell(colors, "GPU"), offCell(colors, "VRAM")]
+  const gpu = gpuOf(stats)
+  return [usageCell(colors, "GPU", "gpu", gpu?.util ?? null), usageCell(colors, "VRAM", "vram", gpu?.vramPercent ?? null)]
+}
 
 /** Grid rows: [CPU, RAM, DISK] and [GPU, VRAM, SWAP]; without a GPU the second row holds only SWAP. */
 export function gridRows(colors: Palette, stats: SystemStats): Cell[][] {
@@ -51,14 +61,7 @@ export function gridRows(colors: Palette, stats: SystemStats): Cell[][] {
     usageCell(colors, "RAM", "ram", stats.ram?.percent ?? null),
     usageCell(colors, "DISK", "disk", stats.disk?.percent ?? null),
   ]
-  const gpu = gpuOf(stats)
-  const second = stats.gpu
-    ? [
-        usageCell(colors, "GPU", "gpu", gpu?.util ?? null),
-        usageCell(colors, "VRAM", "vram", gpu?.vramPercent ?? null),
-      ]
-    : []
-  return [first, [...second, usageCell(colors, "SWAP", "swap", stats.swap?.percent ?? null)]]
+  return [first, [...gpuCells(colors, stats), usageCell(colors, "SWAP", "swap", stats.swap?.percent ?? null)]]
 }
 
 /** Title pieces: the label stays in the base text color, only the GPU temperature follows tempColor. */

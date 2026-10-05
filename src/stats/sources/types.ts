@@ -4,6 +4,7 @@ import type { Tool } from "../tools"
 
 export interface CollectorDeps {
   readText(path: string): Promise<string>
+  listDir(path: string): Promise<string[]>
   statfs(path: string): Promise<FsStats>
   runSmi(signal?: AbortSignal): Promise<string>
   run(tool: Tool, args: readonly string[], signal?: AbortSignal): Promise<string>
@@ -26,4 +27,5 @@ export interface StatsSource {
   memory(signal?: AbortSignal): Promise<MemoryStats>
   /** false when the platform never has an NVIDIA GPU, so nvidia-smi is not spawned. */
   readonly hasGpu: boolean
+  gpuSuspended?(): Promise<boolean>
 }

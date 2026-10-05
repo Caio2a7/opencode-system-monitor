@@ -44,7 +44,7 @@ export interface GpuStats {
   name: string
 }
 /** `null` means nvidia-smi is not installed. */
-export type GpuResult = GpuStats | { error: string } | null
+export type GpuResult = GpuStats | { error: string } | { suspended: true } | null
 export interface SystemStats {
   cpu: CpuStats | null
   ram: RamStats | null

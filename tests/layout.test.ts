@@ -111,6 +111,14 @@ describe("gridRows degraded inputs", () => {
     }
   })
 
+  test("a suspended GPU shows muted off cells and no temperature", () => {
+    const stats = withGpu({ suspended: true })
+    const rows = gridRows(c, stats)
+    expect(gridText(rows).slice(2)).toEqual(["GPU   off  VRAM  off  SWAP  13%", "─────────  ─────────  ━────────"])
+    expect(rows[1]![0]!.label.at(-1)).toEqual({ text: "off", fg: c.muted, bold: false })
+    expect(titleSegments(c, stats)).toEqual([{ text: " System ", fg: c.base, bold: false }])
+  })
+
   test("null cpu and swap show dashes with an empty bar", () => {
     const rows = gridRows(c, { ...fullStats, cpu: null, swap: null })
     const cpu = rows[0]![0]!

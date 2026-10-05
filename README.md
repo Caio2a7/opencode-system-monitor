@@ -114,7 +114,7 @@ The plugin runs on Linux, macOS and Windows; the package installs on any OS.
 | RAM           | `/proc/meminfo` (MemTotal − MemAvailable); inside a container with a lower cgroup memory limit, usage − inactive file cache over that limit | `vm_stat` active + wired + compressed pages    | total − available physical memory                                                                |
 | Swap          | `/proc/meminfo`                          | `sysctl -n vm.swapusage`                       | page file usage via PowerShell `Get-CimInstance Win32_PageFileUsage`, refreshed at most every 30 s |
 | Disk          | `statfs("/")`                            | `statfs("/")`, APFS container used / size      | `statfs` of the system drive (`%SystemDrive%`, default `C:\`)                                    |
-| GPU/VRAM/temp | `nvidia-smi`                             | not available (cells hidden)                   | `nvidia-smi` (NVIDIA drivers)                                                                    |
+| GPU/VRAM/temp | `nvidia-smi`, skipped while the dGPU is runtime-suspended (`off`) | not available (cells hidden)                   | `nvidia-smi` (NVIDIA drivers)                                                                    |
 
 Other platforms (e.g. FreeBSD) are best effort: CPU and RAM via Node's `os` module, swap hidden, disk `/`.
 
@@ -157,7 +157,8 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 | Nothing in the sidebar               | Open a session, widen the terminal and check that the sidebar is visible.                  |
 | Plugin not loaded                    | Make sure it is listed in `~/.config/opencode/cli.json` (V2), then restart the TUI.        |
 | No GPU or VRAM cells                 | Expected without `nvidia-smi`, and always on macOS; the second row shows only SWAP.        |
-| GPU and VRAM show `—`                | `nvidia-smi` is installed but failed or timed out (3 s). Run it in the same terminal.      |
+| GPU and VRAM show `—`                | `nvidia-smi` is installed but failed or timed out (3 s); it is retried with a backoff of 5 s up to 5 min. |
+| GPU and VRAM show `off`              | Linux laptop dGPU is runtime-suspended (RTD3); the plugin does not wake it up to read it. |
 | Windows swap missing at start        | Swap appears up to 30 s after start (PowerShell query is throttled).                       |
 | SWAP shows `—` on Windows            | PowerShell is blocked (AppLocker, GPO) or took over 10 s; swap is hidden, other metrics still work. |
 | OpenCode V1 (`tui.json`)             | Not supported; use OpenCode V2.                                                            |
