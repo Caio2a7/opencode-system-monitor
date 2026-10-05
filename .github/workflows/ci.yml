@@ -14,8 +14,13 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -28,4 +33,6 @@ jobs:
       - run: bun test
       - run: bun run build
       - run: node --check dist/tui.js
-      - run: npm pack --dry-run
+      - run: bun run smoke
+      - if: runner.os == 'Linux'
+        run: npm pack --dry-run

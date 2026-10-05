@@ -32,6 +32,7 @@ jobs:
       - run: bun run typecheck
       - run: bun test
       - run: bun run build
+      - run: bun run smoke
 
       - name: Verify tag matches package.json version
         run: |
@@ -57,6 +58,11 @@ jobs:
         run: npm publish --provenance --access public
 
       - name: Create GitHub Release
-        run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists; skipping."
+          else
+            gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
