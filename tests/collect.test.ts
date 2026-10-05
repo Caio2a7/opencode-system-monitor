@@ -121,7 +121,7 @@ describe("createCollector", () => {
   test("error text from external tools cannot carry terminal escape sequences", async () => {
     const { deps } = fakeDeps({ run: async () => { throw new Error("\u001b]52;c;cHduZWQ=\u0007\u001b[2J boom\nnext") } })
     const { errors } = await createCollector(deps).collect()
-    expect(errors.gpu).toBe("]52;c;cHduZWQ= [2J boom next")
+    expect(errors.gpu).toBe("boom next")
     expect(errors.gpu).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/)
   })
 

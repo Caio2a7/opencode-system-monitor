@@ -114,7 +114,7 @@ describe("parseNvidiaSmi", () => {
   })
 
   test("control characters in the GPU name are neutralized", () => {
-    expect(parseNvidiaSmi("1, 2, 3, 4, Evil\u001b[2JGPU\n")!.name).toBe("Evil [2JGPU")
+    expect(parseNvidiaSmi("1, 2, 3, 4, Evil\u001b[2JGPU\u0007\n")!.name).toBe("EvilGPU")
   })
 
   test("ignores additional GPU lines", () => {
