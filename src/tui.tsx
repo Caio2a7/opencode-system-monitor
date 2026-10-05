@@ -6,7 +6,7 @@ import type { SystemStats } from "./types"
 import { MonitorView } from "./view"
 
 const ID = "opencode-system-monitor"
-const EMPTY: SystemStats = { cpu: null, ram: null, disk: null, gpu: null, net: null }
+const EMPTY: SystemStats = { cpu: null, ram: null, disk: null, gpu: null, swap: null }
 
 // Plain object instead of `Plugin.define()` (an identity function): published installs then need no runtime import
 // of `@opencode/plugin`, which the host does not provide to packages under node_modules.

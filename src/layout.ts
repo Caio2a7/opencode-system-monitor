@@ -54,13 +54,9 @@ function usageCell(colors: Palette, label: string, kind: MetricKind, percent: nu
   return cell(colors, label, accent, percent, percentValue(colors, percent, accent))
 }
 
-function netCell(colors: Palette, net: SystemStats["net"]): Cell {
-  return cell(colors, "NET", colors.info, net?.percent ?? null, rateValue(colors, net?.rate ?? null))
-}
-
 const gpuOf = (stats: SystemStats): GpuStats | null => (stats.gpu && "util" in stats.gpu ? stats.gpu : null)
 
-/** Grid rows: [CPU, RAM, DISK] and [GPU, VRAM, NET]; without a GPU the second row holds only NET. */
+/** Grid rows: [CPU, RAM, DISK] and [GPU, VRAM, SWAP]; without a GPU the second row holds only SWAP. */
 export function gridRows(colors: Palette, stats: SystemStats): Cell[][] {
   const first = [
     usageCell(colors, "CPU", "cpu", stats.cpu?.percent ?? null),
@@ -74,7 +70,7 @@ export function gridRows(colors: Palette, stats: SystemStats): Cell[][] {
         usageCell(colors, "VRAM", "vram", gpu?.vramPercent ?? null),
       ]
     : []
-  return [first, [...second, netCell(colors, stats.net)]]
+  return [first, [...second, usageCell(colors, "SWAP", "swap", stats.swap?.percent ?? null)]]
 }
 
 export function titleText(stats: SystemStats): string {

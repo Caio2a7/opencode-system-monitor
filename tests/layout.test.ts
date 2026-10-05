@@ -98,26 +98,26 @@ describe("gridRows with full stats", () => {
     expect(gridText(rows)).toEqual([
       "CPU   30%  RAM   56%  DISK  46%",
       "━━╸──────  ━━━━━────  ━━━━─────",
-      "GPU   89%  VRAM  58%  NET  3.4M",
-      "━━━━━━━━─  ━━━━━────  ━━━╸─────",
+      "GPU   89%  VRAM  58%  SWAP  13%",
+      "━━━━━━━━─  ━━━━━────  ━────────",
     ])
   })
 
-  test("bar accents come from the usage scale; NET uses info", () => {
+  test("bar accents come from the usage scale; SWAP uses the ram scale", () => {
     expect(rows[0]![0]!.bar[0]!.fg).toBe(usageColor(c, "cpu", 30))
     expect(rows[0]![1]!.bar[0]!.fg).toBe(usageColor(c, "ram", 56))
     expect(rows[0]![2]!.bar[0]!.fg).toBe(c.base)
     expect(rows[1]![0]!.bar[0]!.fg).toBe(usageColor(c, "gpu", 89))
     expect(rows[1]![1]!.bar[0]!.fg).toBe(usageColor(c, "vram", 58))
-    expect(rows[1]![2]!.bar[0]!.fg).toBe(c.info)
+    expect(rows[1]![2]!.bar[0]!.fg).toBe(usageColor(c, "swap", 12.5))
   })
 })
 
 describe("gridRows degraded inputs", () => {
-  test("gpu null (no nvidia-smi) leaves only NET on row two", () => {
+  test("gpu null (no nvidia-smi) leaves only SWAP on row two", () => {
     const rows = gridRows(c, withGpu(null))
     expect(rows.map((r) => r.length)).toEqual([3, 1])
-    expect(flat(rows[1]![0]!.label).startsWith("NET")).toBe(true)
+    expect(flat(rows[1]![0]!.label).startsWith("SWAP")).toBe(true)
   })
 
   test("gpu error keeps GPU/VRAM cells showing an em dash", () => {
@@ -130,18 +130,18 @@ describe("gridRows degraded inputs", () => {
     }
   })
 
-  test("null cpu and net show dashes with an empty bar", () => {
-    const rows = gridRows(c, { ...fullStats, cpu: null, net: { rate: null, percent: null } })
+  test("null cpu and swap show dashes with an empty bar", () => {
+    const rows = gridRows(c, { ...fullStats, cpu: null, swap: null })
     const cpu = rows[0]![0]!
-    const net = rows[1]![2]!
+    const swap = rows[1]![2]!
     expect(flat(cpu.label)).toBe("CPU     —")
     expect(flat(cpu.bar)).toBe("─────────")
-    expect(flat(net.label)).toBe("NET     —")
-    expect(flat(net.bar)).toBe("─────────")
+    expect(flat(swap.label)).toBe("SWAP    —")
+    expect(flat(swap.bar)).toBe("─────────")
   })
 
   test("everything missing still yields 9-column cells", () => {
-    const empty: SystemStats = { cpu: null, ram: null, disk: null, gpu: null, net: null }
+    const empty: SystemStats = { cpu: null, ram: null, disk: null, gpu: null, swap: null }
     for (const cell of gridRows(c, empty).flat()) {
       expect(cols(flat(cell.label))).toBe(9)
       expect(cols(flat(cell.bar))).toBe(9)

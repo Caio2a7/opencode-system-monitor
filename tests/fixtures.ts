@@ -31,6 +31,8 @@ MemFree:         1000000 kB
 MemAvailable:    8192000 kB
 Buffers:          200000 kB
 Cached:          4000000 kB
+SwapTotal:       8388608 kB
+SwapFree:        7340032 kB
 `
 
 export function netDev(rx: { lo?: number; docker0?: number; veth1a?: number; wlan0?: number; enp3s0?: number }) {
@@ -55,5 +57,5 @@ export const fullStats: SystemStats = {
   ram: { percent: 56, usedGiB: 8.9, totalGiB: 15.9 },
   disk: { percent: 46 },
   gpu: { util: 89, temp: 62, vramPercent: 58, vramUsedGiB: 4.6, vramTotalGiB: 8, name: "RTX" },
-  net: { rate: 3565158, percent: 40 },
+  swap: { percent: 12.5, usedGiB: 1, totalGiB: 8 },
 }

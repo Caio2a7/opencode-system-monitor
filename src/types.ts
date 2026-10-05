@@ -26,6 +26,11 @@ export interface RamStats {
   usedGiB: number
   totalGiB: number
 }
+export interface SwapStats {
+  percent: number
+  usedGiB: number
+  totalGiB: number
+}
 export interface DiskStats {
   percent: number
 }
@@ -48,10 +53,10 @@ export interface SystemStats {
   ram: RamStats | null
   disk: DiskStats | null
   gpu: GpuResult
-  net: NetStats | null
+  swap: SwapStats | null
 }
 
-export type MetricKind = "cpu" | "ram" | "disk" | "gpu" | "vram"
+export type MetricKind = "cpu" | "ram" | "disk" | "gpu" | "vram" | "swap"
 
 export interface Segment {
   text: string

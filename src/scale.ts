@@ -50,6 +50,7 @@ function lowColor(c: Palette, kind: MetricKind, v: number): string {
   switch (kind) {
     case "cpu":
     case "ram":
+    case "swap":
       return lerp(c.success, c.yellow, v / USAGE_HIGH)
     case "gpu":
     case "vram":

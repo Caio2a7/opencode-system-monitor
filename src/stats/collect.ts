@@ -1,7 +1,6 @@
 import { readFile, statfs } from "node:fs/promises"
-import type { CpuStats, DiskStats, GpuResult, NetStats, RamStats, SystemStats } from "../types"
-import { createNetMeter } from "./net"
-import { cpuPercent, diskPercent, parseCpuTimes, parseMeminfo, parseNvidiaSmi, sumRxBytes } from "./parse"
+import type { CpuStats, DiskStats, GpuResult, RamStats, SwapStats, SystemStats } from "../types"
+import { cpuPercent, diskPercent, parseCpuTimes, parseMeminfo, parseNvidiaSmi, parseSwap } from "./parse"
 import { runNvidiaSmi } from "./smi"
 
 export interface CollectorDeps {
@@ -37,10 +36,9 @@ async function collectGpu(deps: CollectorDeps, signal?: AbortSignal): Promise<Gp
   }
 }
 
-/** Creates a stats collector; CPU and network deltas are kept inside the instance. */
+/** Creates a stats collector; CPU deltas are kept inside the instance. */
 export function createCollector(overrides: Partial<CollectorDeps> = {}): { collect(signal?: AbortSignal): Promise<SystemStats> } {
   const deps: CollectorDeps = { ...defaultDeps, ...overrides }
-  const meter = createNetMeter()
   let prevCpu: ReturnType<typeof parseCpuTimes> = null
 
   const cpu = async (): Promise<CpuStats | null> => {
@@ -49,23 +47,25 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
     prevCpu = next
     return next ? { percent: cpuPercent(prev, next) } : null
   }
-  const ram = async (): Promise<RamStats | null> => parseMeminfo(await deps.readText("/proc/meminfo"))
+  const memory = async (): Promise<{ ram: RamStats | null; swap: SwapStats | null }> => {
+    const meminfo = await deps.readText("/proc/meminfo")
+    return { ram: parseMeminfo(meminfo), swap: parseSwap(meminfo) }
+  }
   const disk = async (): Promise<DiskStats | null> => {
     const percent = diskPercent(await deps.statfs("/"))
     return percent === null ? null : { percent }
   }
-  const net = async (): Promise<NetStats | null> =>
-    meter.sample(sumRxBytes(await deps.readText("/proc/net/dev")), deps.now())
 
   return {
     async collect(signal) {
-      const [c, r, d, g, n] = await Promise.allSettled([cpu(), ram(), disk(), collectGpu(deps, signal), net()])
+      const [c, m, d, g] = await Promise.allSettled([cpu(), memory(), disk(), collectGpu(deps, signal)])
+      const mem = m.status === "fulfilled" ? m.value : null
       return {
         cpu: settled(c),
-        ram: settled(r),
+        ram: mem?.ram ?? null,
         disk: settled(d),
         gpu: g.status === "fulfilled" ? g.value : null,
-        net: settled(n),
+        swap: mem?.swap ?? null,
       }
     },
   }

@@ -49,8 +49,8 @@ describe("lerp", () => {
 })
 
 describe("usageColor below the high threshold", () => {
-  test("cpu/ram go success → yellow", () => {
-    for (const kind of ["cpu", "ram"] as const) {
+  test("cpu/ram/swap go success → yellow", () => {
+    for (const kind of ["cpu", "ram", "swap"] as const) {
       expect(usageColor(c, kind, 0)).toBe(c.success)
       expect(usageColor(c, kind, 30)).toBe(lerp(c.success, c.yellow, 30 / 65))
       expect(usageColor(c, kind, 64)).toBe(lerp(c.success, c.yellow, 64 / 65))
@@ -80,7 +80,7 @@ describe("usageColor below the high threshold", () => {
 })
 
 describe("usageColor at and above the high threshold", () => {
-  const kinds = ["cpu", "ram", "disk", "gpu", "vram"] as const
+  const kinds = ["cpu", "ram", "disk", "gpu", "vram", "swap"] as const
 
   test("65 is exactly yellow for every kind", () => {
     for (const k of kinds) expect(usageColor(c, k, 65)).toBe(c.yellow)

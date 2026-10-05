@@ -7,6 +7,7 @@ import {
   parseCpuTimes,
   parseMeminfo,
   parseNvidiaSmi,
+  parseSwap,
   sumRxBytes,
 } from "../src/stats/parse"
 import { MEMINFO, PROC_STAT_A, PROC_STAT_B, SMI_LINE, netDev } from "./fixtures"
@@ -67,6 +68,25 @@ describe("parseMeminfo", () => {
   test("returns null when MemTotal is zero (no divide-by-zero)", () => {
     expect(parseMeminfo("MemTotal: 0 kB\nMemAvailable: 0 kB\n")).toBeNull()
   })
+})
+
+describe("parseSwap", () => {
+  test("derives used from SwapTotal - SwapFree in GiB", () => {
+    const swap = parseSwap(MEMINFO)!
+    expect(swap.percent).toBeCloseTo(12.5, 10)
+    expect(swap.totalGiB).toBeCloseTo(8, 10)
+    expect(swap.usedGiB).toBeCloseTo(1, 10)
+  })
+
+  test("returns null when swap is disabled (SwapTotal 0)", () => {
+    expect(parseSwap("SwapTotal: 0 kB\nSwapFree: 0 kB\n")).toBeNull()
+  })
+
+  test.each([
+    ["empty", ""],
+    ["missing SwapFree", "SwapTotal: 100 kB\n"],
+    ["missing SwapTotal", "SwapFree: 100 kB\n"],
+  ])("returns null for %s", (_n, input) => expect(parseSwap(input)).toBeNull())
 })
 
 describe("parseNvidiaSmi", () => {

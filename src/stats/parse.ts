@@ -1,4 +1,4 @@
-import type { GpuStats, RamStats } from "../types"
+import type { GpuStats, RamStats, SwapStats } from "../types"
 
 export { createNetMeter } from "./net"
 
@@ -40,6 +40,15 @@ export function parseMeminfo(meminfo: string): RamStats | null {
   const available = meminfoKib(meminfo, "MemAvailable")
   if (total === null || available === null || total <= 0) return null
   const used = total - available
+  return { percent: (used / total) * 100, usedGiB: used / KIB_PER_GIB, totalGiB: total / KIB_PER_GIB }
+}
+
+/** used = SwapTotal - SwapFree; null when swap is absent (SwapTotal 0 or missing). */
+export function parseSwap(meminfo: string): SwapStats | null {
+  const total = meminfoKib(meminfo, "SwapTotal")
+  const free = meminfoKib(meminfo, "SwapFree")
+  if (total === null || free === null || total <= 0) return null
+  const used = Math.max(0, total - free)
   return { percent: (used / total) * 100, usedGiB: used / KIB_PER_GIB, totalGiB: total / KIB_PER_GIB }
 }
 
