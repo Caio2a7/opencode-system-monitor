@@ -128,6 +128,9 @@ No color is hard-coded; everything is derived from the active OpenCode theme.
 | GPU, VRAM     | fades purple (`syntax.keyword`) → pink (purple mixed with `error`) at 32.5% → yellow at 65% | same yellow → orange → red scale                       |
 | DISK          | base text color                                    | same yellow → orange → red scale                                |
 
+Yellow is `syntax.type` when the theme's type color is a yellow or gold hue; otherwise (e.g. Dracula's cyan types) it
+is a blend of `success` and `warning`, so the scale always reads green → yellow → orange → red.
+
 The card title keeps "System" in the theme text color; only the GPU temperature is colored:
 
 | Temperature | Color  |

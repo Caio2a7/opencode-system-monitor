@@ -25,6 +25,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Fixed
 
+- Themes whose `syntax.type` is not yellow (e.g. Dracula's cyan) no longer turn the usage scale green → cyan → orange; yellow falls back to a `success`/`warning` blend.
+
 - Child process output is decoded after all bytes arrive, so multibyte characters split across chunks are no longer corrupted.
 - macOS DISK measured the sealed system volume and showed a few percent on a full disk; it now reports the APFS container usage.
 - Linux CPU no longer counts `guest` and `guest_nice` twice (they are already included in `user` and `nice`), which inflated usage on hosts running VMs.

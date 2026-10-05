@@ -36,6 +36,18 @@ export function lerp(from: MathColor, to: MathColor, t: number): string {
 
 export const toHex = (color: MathColor): string => rgbHex(toRgb(color))
 
+const MIN_SATURATION = 0.25
+
+export function hueOf(color: MathColor): number | null {
+  const [r, g, b] = toRgb(color).map((v) => v / 255) as Rgb
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const d = max - min
+  if (d === 0 || d / (1 - Math.abs(max + min - 1)) < MIN_SATURATION) return null
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4
+  return (h * 60 + 360) % 360
+}
+
 /** Color at v along ascending [x, color] stops; clamps at both ends. */
 function stops(points: [Stop, ...Stop[]], v: number): string {
   const first = points[0]

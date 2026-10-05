@@ -1,6 +1,6 @@
 import { createMemo, Index } from "solid-js"
 import { CELL_GAP, CELL_WIDTH, gridRows, titleSegments } from "./layout"
-import { palette } from "./palette"
+import { palette, type ThemeTokens } from "./palette"
 import type { Cell, Segment, SystemStats } from "./types"
 
 const NBSP = "\u00a0"
@@ -36,7 +36,7 @@ function Title(props: { segments: Segment[] }) {
 }
 
 /** Bordered grid panel; `theme` is the host theme (narrowed by palette()), read at render time so switches apply live. */
-export function MonitorView(props: { theme: unknown; stats: () => SystemStats }) {
+export function MonitorView(props: { theme: ThemeTokens; stats: () => SystemStats }) {
   const colors = createMemo(() => palette(props.theme))
   const rows = createMemo(() => gridRows(colors(), props.stats()))
   const title = createMemo(() => titleSegments(colors(), props.stats()))

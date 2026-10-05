@@ -1,20 +1,27 @@
-import { lerp } from "./scale"
+import type { ResolvedTheme } from "@opencode/theme/tui"
+import { hueOf, lerp } from "./scale"
 import type { Color, Palette } from "./types"
 
-// The theme is an external object; the tokens below are narrowed structurally instead of via `any`.
-interface Theme {
-  border: { base: Color }
-  text: {
-    base: Color
-    muted: Color
-    feedback: Record<"success" | "warning" | "error", { base: Color }>
+type Tone = Pick<ResolvedTheme["text"]["feedback"]["success"], "base">
+
+export interface ThemeTokens {
+  readonly border: Pick<ResolvedTheme["border"], "base">
+  readonly text: Pick<ResolvedTheme["text"], "base" | "muted"> & {
+    readonly feedback: Readonly<Record<"success" | "warning" | "error", Tone>>
   }
-  syntax: { type: Color; keyword: Color }
+  readonly syntax: Pick<ResolvedTheme["syntax"], "type" | "keyword">
+}
+
+const YELLOW_HUES = [35, 75] as const
+
+function yellowOf(t: ThemeTokens): Color {
+  const hue = hueOf(t.syntax.type)
+  if (hue !== null && hue >= YELLOW_HUES[0] && hue <= YELLOW_HUES[1]) return t.syntax.type
+  return lerp(t.text.feedback.success.base, t.text.feedback.warning.base, 0.5)
 }
 
 /** Palette from the active theme tokens; no fixed colors. Pink has no token, so it blends purple into error. */
-export function palette(theme: unknown): Palette {
-  const t = theme as Theme
+export function palette(t: ThemeTokens): Palette {
   const purple = t.syntax.keyword
   const error = t.text.feedback.error.base
   return {
@@ -23,7 +30,7 @@ export function palette(theme: unknown): Palette {
     border: t.border.base,
     success: t.text.feedback.success.base,
     warning: t.text.feedback.warning.base,
-    yellow: t.syntax.type,
+    yellow: yellowOf(t),
     error,
     purple,
     pink: lerp(purple, error, 0.4),

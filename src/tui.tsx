@@ -2,6 +2,7 @@ import { createSignal, onCleanup } from "solid-js"
 import type { Plugin } from "@opencode/plugin/tui"
 import { createCollector } from "./stats/collect"
 import { parseOptions } from "./options"
+import type { ThemeTokens } from "./palette"
 import { createPoller } from "./poller"
 import type { SystemStats } from "./types"
 import { MonitorView } from "./view"
@@ -12,7 +13,7 @@ const PRIME_MS = 500
 
 type Collector = ReturnType<typeof createCollector>
 
-function MonitorCard(props: { theme: unknown; stats: () => SystemStats; acquire: () => () => void }) {
+function MonitorCard(props: { theme: ThemeTokens; stats: () => SystemStats; acquire: () => () => void }) {
   onCleanup(props.acquire())
   return <MonitorView theme={props.theme} stats={props.stats} />
 }

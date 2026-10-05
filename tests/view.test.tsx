@@ -5,17 +5,9 @@ import type { Renderable } from "@opentui/core"
 import { MonitorView } from "../src/view"
 import type { SystemStats } from "../src/types"
 import { tempColor, toHex } from "../src/scale"
-import { colors, fullStats } from "./fixtures"
+import { colors, fullStats, themeOf } from "./fixtures"
 
-const theme = {
-  border: { base: colors.border },
-  text: {
-    base: colors.base,
-    muted: colors.muted,
-    feedback: { success: { base: colors.success }, warning: { base: colors.warning }, error: { base: colors.error } },
-  },
-  syntax: { type: colors.yellow, keyword: colors.purple },
-}
+const theme = themeOf()
 
 // 31 columns of cells + 2 padding + 2 border.
 const CARD_WIDTH = 35

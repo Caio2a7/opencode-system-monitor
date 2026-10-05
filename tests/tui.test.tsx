@@ -4,20 +4,12 @@ import { testRender } from "@opentui/solid"
 import type { Plugin } from "@opencode/plugin/tui"
 import { createPlugin } from "../src/tui"
 import type { SystemStats } from "../src/types"
-import { colors, fullStats } from "./fixtures"
+import { fullStats, themeOf } from "./fixtures"
 
 type Context = Parameters<Plugin.Definition["setup"]>[0]
 type Claim = { append: string; render: (input: { sessionID: string }) => unknown }
 
-const theme = {
-  border: { base: colors.border },
-  text: {
-    base: colors.base,
-    muted: colors.muted,
-    feedback: { success: { base: colors.success }, warning: { base: colors.warning }, error: { base: colors.error } },
-  },
-  syntax: { type: colors.yellow, keyword: colors.purple },
-}
+const theme = themeOf()
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 

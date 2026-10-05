@@ -1,3 +1,5 @@
+import { RGBA } from "@opentui/core"
+import type { ThemeTokens } from "../src/palette"
 import type { Palette, SystemStats } from "../src/types"
 
 export const colors: Palette = {
@@ -10,6 +12,21 @@ export const colors: Palette = {
   error: "#ff0000",
   purple: "#8000ff",
   pink: "#ff80ff",
+}
+
+const rgba = (hex: string) => RGBA.fromHex(hex)
+
+export function themeOf(over: { type?: string } = {}): ThemeTokens {
+  const tone = (hex: string) => ({ base: rgba(hex) })
+  return {
+    border: { base: rgba("#333333") },
+    text: {
+      base: rgba("#ffffff"),
+      muted: rgba("#888888"),
+      feedback: { success: tone("#00ff00"), warning: tone("#ff8800"), error: tone("#ff0000") },
+    },
+    syntax: { type: rgba(over.type ?? "#ffff00"), keyword: rgba("#8000ff") },
+  }
 }
 
 export const PROC_STAT_A = `cpu  100 0 50 800 50 0 0 0 0 0
