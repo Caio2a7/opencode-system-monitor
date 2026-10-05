@@ -16,7 +16,6 @@ function fakeDeps(over: Partial<CollectorDeps> & { files?: Record<string, string
     },
     statfs: async () => ({ blocks: 1000, bfree: 400, bavail: 300 }),
     runSmi: async () => SMI_LINE,
-    now: () => 0,
     ...rest,
   }
   return { deps, files }
@@ -35,12 +34,10 @@ describe("createCollector", () => {
   })
 
   test("second collect derives cpu percent from deltas", async () => {
-    let t = 0
-    const { deps, files } = fakeDeps({ now: () => t })
+    const { deps, files } = fakeDeps()
     const c = createCollector(deps)
     await c.collect()
     files["/proc/stat"] = PROC_STAT_B
-    t = 1000
     const stats = await c.collect()
     expect(stats.cpu?.percent).toBeCloseTo(50, 10)
   })
@@ -86,7 +83,7 @@ describe("createCollector", () => {
 
   test("never throws even if every dependency rejects", async () => {
     const fail = async () => { throw new Error("nope") }
-    const c = createCollector({ readText: fail, statfs: fail, runSmi: fail, now: () => 0 })
+    const c = createCollector({ readText: fail, statfs: fail, runSmi: fail })
     const stats = await c.collect()
     expect(stats.cpu).toBeNull()
     expect(stats.ram).toBeNull()

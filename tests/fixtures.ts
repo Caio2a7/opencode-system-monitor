@@ -10,7 +10,6 @@ export const colors: Palette = {
   error: "#ff0000",
   purple: "#8000ff",
   pink: "#ff80ff",
-  info: "#0088ff",
 }
 
 export const PROC_STAT_A = `cpu  100 0 50 800 50 0 0 0 0 0
@@ -34,21 +33,6 @@ Cached:          4000000 kB
 SwapTotal:       8388608 kB
 SwapFree:        7340032 kB
 `
-
-export function netDev(rx: { lo?: number; docker0?: number; veth1a?: number; wlan0?: number; enp3s0?: number }) {
-  const row = (name: string, bytes: number) =>
-    `${name.padStart(8)}: ${bytes} 10 0 0 0 0 0 0 5000 10 0 0 0 0 0 0`
-  return [
-    "Inter-|   Receive                                                |  Transmit",
-    " face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed",
-    row("lo", rx.lo ?? 0),
-    row("docker0", rx.docker0 ?? 0),
-    row("veth1a", rx.veth1a ?? 0),
-    row("wlan0", rx.wlan0 ?? 0),
-    row("enp3s0", rx.enp3s0 ?? 0),
-    "",
-  ].join("\n")
-}
 
 export const SMI_LINE = "89, 4746, 8188, 62, NVIDIA GeForce RTX 4060 Laptop GPU\n"
 

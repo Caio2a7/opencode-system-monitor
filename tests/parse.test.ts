@@ -1,16 +1,13 @@
 import { describe, expect, test } from "bun:test"
 import {
-  NET_SKIP,
   cpuPercent,
-  createNetMeter,
   diskPercent,
   parseCpuTimes,
   parseMeminfo,
   parseNvidiaSmi,
   parseSwap,
-  sumRxBytes,
 } from "../src/stats/parse"
-import { MEMINFO, PROC_STAT_A, PROC_STAT_B, SMI_LINE, netDev } from "./fixtures"
+import { MEMINFO, PROC_STAT_A, PROC_STAT_B, SMI_LINE } from "./fixtures"
 
 const MiB = 1_048_576
 
@@ -127,70 +124,3 @@ describe("diskPercent", () => {
   })
 })
 
-describe("sumRxBytes", () => {
-  test("skips virtual interfaces by default", () => {
-    const text = netDev({ lo: 999, docker0: 888, veth1a: 777, wlan0: 100, enp3s0: 50 })
-    expect(sumRxBytes(text)).toBe(150)
-  })
-
-  test("NET_SKIP lists the documented prefixes", () => {
-    expect([...NET_SKIP]).toEqual(["lo", "docker", "veth", "br-", "virbr", "tun", "tap", "wg"])
-  })
-
-  test("custom skip list overrides the default", () => {
-    expect(sumRxBytes(netDev({ lo: 1, wlan0: 10, enp3s0: 100 }), ["wlan"])).toBe(101)
-  })
-
-  test.each([["empty", ""], ["header only", "a\nb\n"], ["garbage", "hello world"]])(
-    "returns 0 for %s",
-    (_n, input) => expect(sumRxBytes(input)).toBe(0),
-  )
-})
-
-describe("createNetMeter", () => {
-  test("first sample has no rate", () => {
-    expect(createNetMeter().sample(1000, 0)).toEqual({ rate: null, percent: null })
-  })
-
-  test("rate in B/s; peak below floor uses the floor", () => {
-    const m = createNetMeter()
-    m.sample(0, 0)
-    const s = m.sample(MiB / 2, 1000)
-    expect(s.rate).toBe(MiB / 2)
-    expect(s.percent).toBeCloseTo(50, 10)
-  })
-
-  test("rate scales by elapsed milliseconds", () => {
-    const m = createNetMeter()
-    m.sample(0, 0)
-    expect(m.sample(MiB, 500)?.rate).toBe(2 * MiB)
-  })
-
-  test("a new peak yields 100% and later slower rates are relative to it", () => {
-    const m = createNetMeter()
-    m.sample(0, 0)
-    expect(m.sample(10 * MiB, 1000).percent).toBeCloseTo(100, 10)
-    expect(m.sample(12 * MiB, 2000).percent).toBeCloseTo(20, 10)
-  })
-
-  test("old peaks fall out of the window", () => {
-    const m = createNetMeter({ window: 2 })
-    m.sample(0, 0)
-    expect(m.sample(10 * MiB, 1000).rate).toBe(10 * MiB)
-    expect(m.sample(11 * MiB, 2000).percent).toBeCloseTo(10, 10)
-    expect(m.sample(12 * MiB, 3000).percent).toBeCloseTo(100, 10)
-  })
-
-  test("custom floor changes the scale", () => {
-    const m = createNetMeter({ floorBps: 4 * MiB })
-    m.sample(0, 0)
-    expect(m.sample(MiB, 1000).percent).toBeCloseTo(25, 10)
-  })
-
-  test("counter regression resets the sample and rebases", () => {
-    const m = createNetMeter()
-    m.sample(5 * MiB, 0)
-    expect(m.sample(100, 1000)).toEqual({ rate: null, percent: null })
-    expect(m.sample(100 + MiB, 2000).rate).toBe(MiB)
-  })
-})

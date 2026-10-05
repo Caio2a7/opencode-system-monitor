@@ -1,10 +1,5 @@
 import type { GpuStats, RamStats, SwapStats } from "../types"
 
-export { createNetMeter } from "./net"
-
-/** Interface name prefixes ignored by the network meter ("lo" matches exactly). */
-export const NET_SKIP: readonly string[] = ["lo", "docker", "veth", "br-", "virbr", "tun", "tap", "wg"]
-
 const KIB_PER_GIB = 1024 * 1024
 const MIB_PER_GIB = 1024
 
@@ -73,19 +68,4 @@ export function diskPercent(fs: { blocks: number; bfree: number; bavail: number 
   const used = fs.blocks - fs.bfree
   const denom = used + fs.bavail
   return denom > 0 ? (used / denom) * 100 : null
-}
-
-const isSkipped = (name: string, skip: readonly string[]): boolean =>
-  skip.some((p) => (p === "lo" ? name === p : name.startsWith(p)))
-
-/** Sums received bytes over /proc/net/dev interfaces not in `skip`; malformed lines are ignored. */
-export function sumRxBytes(procNetDev: string, skip: readonly string[] = NET_SKIP): number {
-  let total = 0
-  for (const line of procNetDev.split("\n").slice(2)) {
-    const [rawName, rest] = line.split(":")
-    if (!rest || rawName === undefined || isSkipped(rawName.trim(), skip)) continue
-    const rx = Number(rest.trim().split(/\s+/)[0])
-    if (Number.isFinite(rx)) total += rx
-  }
-  return total
 }

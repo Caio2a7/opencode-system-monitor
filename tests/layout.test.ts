@@ -3,7 +3,6 @@ import {
   CELL_GAP,
   CELL_WIDTH,
   barSegments,
-  formatRate,
   gridRows,
   gridText,
   titleColor,
@@ -23,23 +22,6 @@ describe("constants", () => {
   })
 })
 
-describe("formatRate", () => {
-  test.each([
-    [null, "—"],
-    [0, "0K"],
-    [800, "0K"],
-    [1023, "0K"],
-    [1024, "1K"],
-    [512000, "500K"],
-    [1_048_576, "1.0M"],
-    [3565158, "3.4M"],
-    [10 * 1_048_576, "10M"],
-    [50331648, "48M"],
-  ])("%p → %p", (input, expected) => {
-    expect(formatRate(input)).toBe(expected)
-  })
-})
-
 describe("barSegments", () => {
   test.each([0, 2, 5.6, 25, 50, 73.3, 99, 100])("is exactly 9 columns at %p%%", (p) => {
     expect(cols(flat(barSegments(c, p, c.success)))).toBe(9)
@@ -52,31 +34,31 @@ describe("barSegments", () => {
   })
 
   test("0% is all track, 100% is all filled in the accent", () => {
-    expect(flat(barSegments(c, 0, c.info))).toBe("─────────")
-    const full = barSegments(c, 100, c.info)
+    expect(flat(barSegments(c, 0, c.success))).toBe("─────────")
+    const full = barSegments(c, 100, c.success)
     expect(flat(full)).toBe("━━━━━━━━━")
-    expect(full.filter((s) => s.text !== "").every((s) => s.fg === c.info)).toBe(true)
+    expect(full.filter((s) => s.text !== "").every((s) => s.fg === c.success)).toBe(true)
   })
 
   test("half cell appears when the remaining fraction is >= .5", () => {
-    expect(flat(barSegments(c, 50, c.info))).toBe("━━━━╸────") // 4.5 cells
-    expect(flat(barSegments(c, 5.6, c.info))).toBe("╸────────") // 0.504 cells
+    expect(flat(barSegments(c, 50, c.success))).toBe("━━━━╸────") // 4.5 cells
+    expect(flat(barSegments(c, 5.6, c.success))).toBe("╸────────") // 0.504 cells
   })
 
   test("no half cell when the remaining fraction is < .5", () => {
-    expect(flat(barSegments(c, 2, c.info))).toBe("─────────") // 0.18 cells
-    expect(flat(barSegments(c, 100 / 3, c.info))).toBe("━━━──────") // 3.0 cells
+    expect(flat(barSegments(c, 2, c.success))).toBe("─────────") // 0.18 cells
+    expect(flat(barSegments(c, 100 / 3, c.success))).toBe("━━━──────") // 3.0 cells
   })
 
   test("filled part uses the accent, the track uses border", () => {
-    const segs = barSegments(c, 50, c.info)
-    expect(segs[0]).toMatchObject({ text: "━━━━╸", fg: c.info })
+    const segs = barSegments(c, 50, c.success)
+    expect(segs[0]).toMatchObject({ text: "━━━━╸", fg: c.success })
     expect(segs[segs.length - 1]).toMatchObject({ text: "────", fg: c.border })
   })
 
   test("out-of-range percents are clamped, not thrown or overflowed", () => {
-    expect(flat(barSegments(c, 250, c.info))).toBe("━━━━━━━━━")
-    expect(flat(barSegments(c, -30, c.info))).toBe("─────────")
+    expect(flat(barSegments(c, 250, c.success))).toBe("━━━━━━━━━")
+    expect(flat(barSegments(c, -30, c.success))).toBe("─────────")
   })
 })
 

@@ -24,22 +24,10 @@ export function barSegments(colors: Palette, percent: number | null, accent: Col
   return segs
 }
 
-/** Rate in at most 5 columns: 0K, NNNK, N.NM, NNM. */
-export function formatRate(bps: number | null): string {
-  if (!known(bps)) return MISSING
-  if (bps < 1024) return "0K"
-  if (bps < 1024 * 1024) return `${Math.round(bps / 1024)}K`
-  const mb = bps / (1024 * 1024)
-  return mb < 10 ? `${mb.toFixed(1)}M` : `${Math.round(mb)}M`
-}
-
 const percentValue = (colors: Palette, percent: number | null, accent: Color): Segment =>
   known(percent)
     ? seg(`${Math.round(percent)}%`, percent >= USAGE_HIGH ? accent : colors.base, true)
     : seg(MISSING, colors.muted)
-
-const rateValue = (colors: Palette, rate: number | null): Segment =>
-  known(rate) ? seg(formatRate(rate), colors.base, true) : seg(MISSING, colors.muted)
 
 function cell(colors: Palette, label: string, accent: Color, percent: number | null, value: Segment): Cell {
   const pad = Math.max(0, CELL_WIDTH - label.length - value.text.length)

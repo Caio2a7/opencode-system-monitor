@@ -15,7 +15,6 @@ export interface Palette {
   error: Color
   purple: Color
   pink: Color
-  info: Color
 }
 
 export interface CpuStats {
@@ -44,10 +43,6 @@ export interface GpuStats {
 }
 /** `null` means nvidia-smi is not installed. */
 export type GpuResult = GpuStats | { error: string } | null
-export interface NetStats {
-  rate: number | null
-  percent: number | null
-}
 export interface SystemStats {
   cpu: CpuStats | null
   ram: RamStats | null

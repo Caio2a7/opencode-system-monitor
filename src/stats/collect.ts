@@ -7,7 +7,6 @@ export interface CollectorDeps {
   readText(path: string): Promise<string>
   statfs(path: string): Promise<{ blocks: number; bfree: number; bavail: number }>
   runSmi(signal?: AbortSignal): Promise<string>
-  now(): number
 }
 
 const defaultDeps: CollectorDeps = {
@@ -17,7 +16,6 @@ const defaultDeps: CollectorDeps = {
     return { blocks: s.blocks, bfree: s.bfree, bavail: s.bavail }
   },
   runSmi: runNvidiaSmi,
-  now: Date.now,
 }
 
 const hasCode = (err: unknown, code: string): boolean =>

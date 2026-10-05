@@ -7,7 +7,7 @@ interface Theme {
   text: {
     base: Color
     muted: Color
-    feedback: Record<"success" | "warning" | "error" | "info", { base: Color }>
+    feedback: Record<"success" | "warning" | "error", { base: Color }>
   }
   syntax: { type: Color; keyword: Color }
 }
@@ -27,6 +27,5 @@ export function palette(theme: unknown): Palette {
     error,
     purple,
     pink: lerp(purple, error, 0.4),
-    info: t.text.feedback.info.base,
   }
 }
