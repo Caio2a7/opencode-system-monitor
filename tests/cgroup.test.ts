@@ -99,7 +99,8 @@ describe("linux collector", () => {
     return {
       readText: reader({ "/proc/stat": PROC_STAT_A, "/proc/meminfo": MEMINFO, ...files }),
       statfs: async () => ({ bsize: 4096, blocks: 1, bfree: 0, bavail: 0 }),
-      runSmi: async () => { throw Object.assign(new Error("x"), { code: "ENOENT" }) },
+      listDir: async () => [],
+      run: async () => { throw Object.assign(new Error("x"), { code: "ENOENT" }) },
       platform: "linux",
     }
   }

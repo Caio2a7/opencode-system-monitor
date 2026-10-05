@@ -16,8 +16,8 @@ function fakeDeps(over: Partial<CollectorDeps> & { files?: Record<string, string
     },
     listDir: async () => [],
     statfs: async () => ({ bsize: 4096, blocks: 1000, bfree: 400, bavail: 300 }),
-    runSmi: async () => SMI_LINE,
-    run: async () => {
+    run: async (tool) => {
+      if (tool === "nvidia-smi") return SMI_LINE
       throw new Error("run not faked")
     },
     cpus: () => [],
@@ -53,12 +53,12 @@ describe("createCollector", () => {
   })
 
   test("nvidia-smi ENOENT means no GPU (null)", async () => {
-    const { deps } = fakeDeps({ runSmi: async () => { throw errno("ENOENT") } })
+    const { deps } = fakeDeps({ run: async () => { throw errno("ENOENT") } })
     expect((await createCollector(deps).collect()).gpu).toBeNull()
   })
 
   test("other nvidia-smi failure becomes { error: message }", async () => {
-    const { deps } = fakeDeps({ runSmi: async () => { throw new Error("driver mismatch") } })
+    const { deps } = fakeDeps({ run: async () => { throw new Error("driver mismatch") } })
     expect((await createCollector(deps).collect()).gpu).toEqual({ error: "driver mismatch" })
   })
 
@@ -93,7 +93,7 @@ describe("createCollector", () => {
 
   test("never throws even if every dependency rejects", async () => {
     const fail = async () => { throw new Error("nope") }
-    const c = createCollector({ readText: fail, statfs: fail, runSmi: fail, platform: "linux" })
+    const c = createCollector({ readText: fail, listDir: fail, statfs: fail, run: fail, platform: "linux" })
     const stats = await c.collect()
     expect(stats.cpu).toBeNull()
     expect(stats.ram).toBeNull()

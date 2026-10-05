@@ -23,7 +23,6 @@ const defaultDeps: CollectorDeps = {
     const s = await statfs(path)
     return { bsize: s.bsize, blocks: s.blocks, bfree: s.bfree, bavail: s.bavail }
   },
-  runSmi: (signal) => runTool("nvidia-smi", SMI_ARGS, signal),
   run: runTool,
   cpus: cpus,
   totalmem,
@@ -62,7 +61,7 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
   }
   const disk = async (): Promise<DiskStats | null> =>
     diskUsage(await deps.statfs(diskRoot(deps.platform, deps.env)), deps.platform === "darwin")
-  const probe = createGpuProbe({ run: (signal) => deps.runSmi(signal), now: () => deps.now() })
+  const probe = createGpuProbe({ run: (signal) => deps.run("nvidia-smi", SMI_ARGS, signal), now: () => deps.now() })
   const gpu = async (signal?: AbortSignal): Promise<GpuResult> => {
     if (!source.hasGpu) return null
     if (await source.gpuSuspended?.().catch(() => false)) return { suspended: true }

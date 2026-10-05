@@ -13,8 +13,8 @@ function setup(platform: string, over: Partial<CollectorDeps> = {}) {
     readText: async () => { calls.read++; throw new Error("readText must not be used") },
     listDir: async () => { throw new Error("listDir must not be used") },
     statfs: async (p) => { calls.statfs.push(p); return { bsize: 4096, blocks: 1000, bfree: 950, bavail: 400 } },
-    runSmi: async () => { calls.smi++; return SMI_LINE },
     run: async (file, args) => {
+      if (file === "nvidia-smi") { calls.smi++; return SMI_LINE }
       calls.run.push([file, args])
       if (file === "vm_stat") return VM_STAT
       if (file === "sysctl") return SWAPUSAGE_M

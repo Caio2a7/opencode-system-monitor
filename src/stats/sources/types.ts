@@ -6,7 +6,6 @@ export interface CollectorDeps {
   readText(path: string): Promise<string>
   listDir(path: string): Promise<string[]>
   statfs(path: string): Promise<FsStats>
-  runSmi(signal?: AbortSignal): Promise<string>
   run(tool: Tool, args: readonly string[], signal?: AbortSignal): Promise<string>
   cpus(): ReadonlyArray<{ times: { user: number; nice: number; sys: number; idle: number; irq: number } }>
   totalmem(): number

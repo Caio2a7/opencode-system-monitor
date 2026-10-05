@@ -62,7 +62,8 @@ describe("linux collector", () => {
       readText: fs.read,
       listDir: fs.list,
       statfs: async () => ({ bsize: 4096, blocks: 10, bfree: 5, bavail: 5 }),
-      runSmi: async () => {
+      run: async (tool) => {
+        if (tool !== "nvidia-smi") throw new Error(`unexpected ${tool}`)
         calls.smi++
         return SMI_LINE
       },
