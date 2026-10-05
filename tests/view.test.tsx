@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test"
 import { createSignal } from "solid-js"
 import { testRender } from "@opentui/solid"
+import type { Renderable } from "@opentui/core"
 import { MonitorView } from "../src/view"
 import type { SystemStats } from "../src/types"
 import { lerp, tempColor } from "../src/scale"
@@ -22,8 +23,8 @@ const CARD_WIDTH = 35
 type Setup = Awaited<ReturnType<typeof testRender>>
 let setup: Setup | undefined
 
-async function frame(stats: SystemStats): Promise<{ setup: Setup; lines: string[] }> {
-  const [signal] = createSignal(stats)
+async function mount(stats: SystemStats) {
+  const [signal, setStats] = createSignal(stats)
   setup = await testRender(
     () => (
       <box width={CARD_WIDTH}>
@@ -33,8 +34,20 @@ async function frame(stats: SystemStats): Promise<{ setup: Setup; lines: string[
     { width: 40, height: 10 },
   )
   await setup.renderOnce()
-  // The title overlay uses no-break spaces so it masks the border line; compare as plain spaces.
-  return { setup, lines: setup.captureCharFrame().replaceAll("\u00a0", " ").split("\n") }
+  return { setup, setStats }
+}
+
+const lines = (s: Setup) => s.captureCharFrame().replaceAll("\u00a0", " ").split("\n")
+
+async function frame(stats: SystemStats): Promise<{ setup: Setup; lines: string[] }> {
+  const { setup } = await mount(stats)
+  return { setup, lines: lines(setup) }
+}
+
+function ids(node: Renderable, out: string[] = []): string[] {
+  out.push(node.id)
+  for (const child of node.getChildren()) ids(child as Renderable, out)
+  return out
 }
 
 afterEach(() => {
@@ -70,5 +83,22 @@ describe("MonitorView", () => {
     expect(fg("System")).toBe(norm(colors.base))
     expect(fg("62°")).toBe(norm(tempColor(colors, 62)))
     expect(fg("╭")).toBe(norm(colors.border))
+  })
+
+  test("a stats update reuses every renderable instead of rebuilding the card", async () => {
+    const { setup, setStats } = await mount(fullStats)
+    const before = ids(setup.renderer.root)
+    setStats({ ...fullStats, cpu: { percent: 31 }, ram: { ...fullStats.ram!, percent: 57 } })
+    await setup.renderOnce()
+    const after = ids(setup.renderer.root)
+    expect(after.filter((id) => before.includes(id))).toHaveLength(before.length)
+    expect(lines(setup)[1]).toContain("CPU   31%  RAM   57%")
+  })
+
+  test("the second row shrinks to SWAP when the GPU disappears", async () => {
+    const { setup, setStats } = await mount(fullStats)
+    setStats({ ...fullStats, gpu: null })
+    await setup.renderOnce()
+    expect(lines(setup)[3]!.replace(/\s+/g, " ")).toContain("│ SWAP 13% │")
   })
 })

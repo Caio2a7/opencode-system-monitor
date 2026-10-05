@@ -14,6 +14,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 - The package no longer restricts `os`, so the documented best-effort platforms (e.g. FreeBSD) can install it.
 
+### Performance
+
+- The card reuses its renderables on every refresh (`<Index>` plus memoized palette and layout) instead of destroying and recreating about 50 of them each tick.
+
 ### Fixed
 
 - Child process output is decoded after all bytes arrive, so multibyte characters split across chunks are no longer corrupted.

@@ -1,4 +1,4 @@
-import { For } from "solid-js"
+import { createMemo, Index } from "solid-js"
 import { CELL_GAP, CELL_WIDTH, gridRows, titleSegments } from "./layout"
 import { palette } from "./palette"
 import type { Cell, Segment, SystemStats } from "./types"
@@ -8,9 +8,9 @@ const NBSP = "\u00a0"
 function Line(props: { segments: Segment[] }) {
   return (
     <box flexDirection="row" gap={0}>
-      <For each={props.segments}>
-        {(s) => <text fg={s.fg}>{s.bold ? <b>{s.text}</b> : s.text}</text>}
-      </For>
+      <Index each={props.segments}>
+        {(s) => <text fg={s().fg}>{s().bold ? <b>{s().text}</b> : s().text}</text>}
+      </Index>
     </box>
   )
 }
@@ -30,26 +30,28 @@ function CellView(props: { cell: Cell }) {
 function Title(props: { segments: Segment[] }) {
   return (
     <text position="absolute" top={0} left={2}>
-      <For each={props.segments}>{(s) => <span style={{ fg: s.fg }}>{s.text.replaceAll(" ", NBSP)}</span>}</For>
+      <Index each={props.segments}>{(s) => <span style={{ fg: s().fg }}>{s().text.replaceAll(" ", NBSP)}</span>}</Index>
     </text>
   )
 }
 
 /** Bordered grid panel; `theme` is the host theme (narrowed by palette()), read at render time so switches apply live. */
 export function MonitorView(props: { theme: unknown; stats: () => SystemStats }) {
-  const colors = () => palette(props.theme)
+  const colors = createMemo(() => palette(props.theme))
+  const rows = createMemo(() => gridRows(colors(), props.stats()))
+  const title = createMemo(() => titleSegments(colors(), props.stats()))
   return (
     <box>
       <box border borderStyle="rounded" borderColor={colors().border} paddingX={1} paddingY={0} gap={0}>
-        <For each={gridRows(colors(), props.stats())}>
+        <Index each={rows()}>
           {(row) => (
             <box flexDirection="row" gap={CELL_GAP}>
-              <For each={row}>{(c) => <CellView cell={c} />}</For>
+              <Index each={row()}>{(c) => <CellView cell={c()} />}</Index>
             </box>
           )}
-        </For>
+        </Index>
       </box>
-      <Title segments={titleSegments(colors(), props.stats())} />
+      <Title segments={title()} />
     </box>
   )
 }
