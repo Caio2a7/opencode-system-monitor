@@ -1,11 +1,10 @@
 import { readFile, statfs } from "node:fs/promises"
 import { cpus, freemem, totalmem } from "node:os"
-import type { CpuStats, DiskStats, GpuResult, SystemStats } from "../types"
-import { cpuPercent, diskUsage, parseNvidiaSmi } from "./parse"
+import type { CpuStats, DiskStats, SystemStats } from "../types"
+import { createGpuProbe, SMI_ARGS } from "./gpu"
+import { cpuPercent, diskUsage } from "./parse"
 import type { CpuTimes } from "./parse"
-import { hasCode, messageOf } from "./errors"
 import { diskRoot } from "./parse-os"
-import { SMI_ARGS } from "./smi"
 import { darwinSource } from "./sources/darwin"
 import { genericSource } from "./sources/generic"
 import { linuxSource } from "./sources/linux"
@@ -48,15 +47,6 @@ function sourceFor(deps: CollectorDeps): StatsSource {
   }
 }
 
-async function collectGpu(deps: CollectorDeps, signal?: AbortSignal): Promise<GpuResult> {
-  try {
-    const gpu = parseNvidiaSmi(await deps.runSmi(signal))
-    return gpu ?? { error: "unexpected nvidia-smi output" }
-  } catch (err) {
-    return hasCode(err, "ENOENT") ? null : { error: messageOf(err) }
-  }
-}
-
 /** Creates a stats collector; CPU deltas are kept inside the instance. */
 export function createCollector(overrides: Partial<CollectorDeps> = {}): { collect(signal?: AbortSignal): Promise<SystemStats> } {
   const deps: CollectorDeps = { ...defaultDeps, ...overrides }
@@ -71,8 +61,8 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
   }
   const disk = async (): Promise<DiskStats | null> =>
     diskUsage(await deps.statfs(diskRoot(deps.platform, deps.env)), deps.platform === "darwin")
-  const gpu = (signal?: AbortSignal): Promise<GpuResult> =>
-    source.hasGpu ? collectGpu(deps, signal) : Promise.resolve(null)
+  const probe = createGpuProbe({ run: (signal) => deps.runSmi(signal), now: () => deps.now() })
+  const gpu = async (signal?: AbortSignal) => (source.hasGpu ? probe(signal) : null)
 
   return {
     async collect(signal) {

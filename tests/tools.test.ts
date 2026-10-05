@@ -24,6 +24,7 @@ function fakeHost(over: Partial<ToolHost> = {}) {
     },
     exec: async (file, args, opts) => {
       calls.exec.push([file, args, opts])
+      opts.onExit?.()
       return "ok"
     },
     ...over,
@@ -113,6 +114,32 @@ describe("createToolRunner", () => {
     expect(calls.exec.map(([, , o]) => o.timeoutMs)).toEqual([10_000, 3000])
   })
 
+  test("refuses to start a tool whose previous process has not exited yet", async () => {
+    let exit: (() => void) | undefined
+    const { host, calls } = fakeHost({
+      exec: async (file, args, opts) => {
+        calls.exec.push([file, args, opts])
+        exit = opts.onExit
+        throw new Error("nvidia-smi timed out after 3000 ms")
+      },
+    })
+    const run = createToolRunner(host)
+    await run("nvidia-smi", []).catch(() => undefined)
+    const err = await run("nvidia-smi", []).catch((e) => e)
+    expect(err.message).toBe("nvidia-smi is still running")
+    expect(calls.exec).toHaveLength(1)
+    exit?.()
+    await run("nvidia-smi", []).catch(() => undefined)
+    expect(calls.exec).toHaveLength(2)
+  })
+
+  test("a failed resolution does not leave the tool marked as running", async () => {
+    const { host } = fakeHost({ isExecutable: async () => false })
+    const run = createToolRunner(host)
+    await run("nvidia-smi", []).catch(() => undefined)
+    expect((await run("nvidia-smi", []).catch((e) => e)).code).toBe("ENOENT")
+  })
+
   test("resolution is cached", async () => {
     const { host, calls } = fakeHost()
     const run = createToolRunner(host)
@@ -132,7 +159,8 @@ describe("createToolRunner", () => {
   test("an ENOENT from the spawn drops the cached path", async () => {
     let gone = false
     const { host, calls } = fakeHost({
-      exec: async () => {
+      exec: async (_f, _a, opts) => {
+        opts.onExit?.()
         if (!gone) return "ok"
         throw Object.assign(new Error("spawn ENOENT"), { code: "ENOENT" })
       },

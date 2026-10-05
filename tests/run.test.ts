@@ -78,4 +78,33 @@ describe("runCommand", () => {
     const err = await runCommand(process.execPath, node("setTimeout(() => {}, 30000)"), { ...opts, signal: ctl.signal }).catch((e) => e)
     expect(err.code).toBe("ABORT_ERR")
   })
+
+  test("onExit fires once after a normal exit", async () => {
+    let exits = 0
+    await runCommand(process.execPath, node("1"), { ...opts, onExit: () => exits++ })
+    await new Promise((r) => setTimeout(r, 20))
+    expect(exits).toBe(1)
+  })
+
+  test("onExit fires for spawn errors and for an already-aborted signal", async () => {
+    let exits = 0
+    await runCommand("definitely-not-a-real-binary-xyz", [], { ...opts, onExit: () => exits++ }).catch(() => undefined)
+    const ctl = new AbortController()
+    ctl.abort()
+    await runCommand(process.execPath, node("1"), { ...opts, signal: ctl.signal, onExit: () => exits++ }).catch(() => undefined)
+    await new Promise((r) => setTimeout(r, 20))
+    expect(exits).toBe(2)
+  })
+
+  test("onExit waits for the killed child to actually exit after a timeout", async () => {
+    let exited = false
+    const err = await runCommand(process.execPath, node("setTimeout(() => {}, 30000)"), {
+      ...opts,
+      timeoutMs: 100,
+      onExit: () => (exited = true),
+    }).catch((e) => e)
+    expect(err.message).toMatch(/timed out/)
+    for (let i = 0; i < 50 && !exited; i++) await new Promise((r) => setTimeout(r, 20))
+    expect(exited).toBe(true)
+  })
 })

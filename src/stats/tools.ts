@@ -114,6 +114,7 @@ export async function isExecutable(path: string): Promise<boolean> {
 
 export function createToolRunner(host: ToolHost): ToolRunner {
   const resolved = new Map<Tool, string>()
+  const alive = new Set<Tool>()
   const env = childEnv(host.platform, host.env)
 
   const resolve = async (tool: Tool): Promise<string> => {
@@ -128,11 +129,17 @@ export function createToolRunner(host: ToolHost): ToolRunner {
   }
 
   return async (tool, args, signal) => {
-    const file = await resolve(tool)
+    if (alive.has(tool)) throw new Error(`${tool} is still running`)
+    alive.add(tool)
+    const file = await resolve(tool).catch((err: unknown) => {
+      alive.delete(tool)
+      throw err
+    })
     const cwd = pathApi(host.platform).dirname(file)
+    const onExit = () => alive.delete(tool)
     try {
       const timeoutMs = TOOL_TIMEOUT_MS[tool] ?? TIMEOUT_MS
-      return await host.exec(file, args, { timeoutMs, maxBytes: MAX_OUTPUT_BYTES, signal, env, cwd })
+      return await host.exec(file, args, { timeoutMs, maxBytes: MAX_OUTPUT_BYTES, signal, env, cwd, onExit })
     } catch (err) {
       if (hasCode(err, "ENOENT")) resolved.delete(tool)
       throw err

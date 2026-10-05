@@ -1,4 +1,5 @@
-import { spawn } from "node:child_process"
+import { spawn, type ChildProcessByStdio } from "node:child_process"
+import type { Readable } from "node:stream"
 
 export interface RunOptions {
   timeoutMs: number
@@ -6,7 +7,10 @@ export interface RunOptions {
   signal?: AbortSignal
   env?: Readonly<Record<string, string>>
   cwd?: string
+  onExit?: () => void
 }
+
+type Child = ChildProcessByStdio<null, Readable, Readable>
 
 const MAX_ERROR_CHARS = 200
 
@@ -23,6 +27,31 @@ function sink(maxBytes: number, onOverflow: () => void) {
   }
 }
 
+function startChild(file: string, args: readonly string[], opts: RunOptions): Child {
+  let exited = false
+  const exit = (): void => {
+    if (exited) return
+    exited = true
+    opts.onExit?.()
+  }
+  try {
+    if (opts.signal?.aborted) throw abortError(file)
+    const child = spawn(file, [...args], {
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: false,
+      windowsHide: true,
+      env: opts.env,
+      cwd: opts.cwd,
+    })
+    child.once("exit", exit)
+    child.once("error", () => child.pid === undefined && exit())
+    return child
+  } catch (err) {
+    exit()
+    throw err
+  }
+}
+
 function abortError(file: string): Error {
   return Object.assign(new Error(`${file} aborted`), { name: "AbortError", code: "ABORT_ERR" })
 }
@@ -32,10 +61,14 @@ function abortError(file: string): Error {
  * the child is killed on timeout, overflow or abort. Spawn errors (e.g. ENOENT) are propagated as-is.
  */
 export function runCommand(file: string, args: readonly string[], opts: RunOptions): Promise<string> {
-  const { timeoutMs, maxBytes, signal, env, cwd } = opts
+  const { timeoutMs, maxBytes, signal } = opts
   return new Promise((resolve, reject) => {
-    if (signal?.aborted) return reject(abortError(file))
-    const child = spawn(file, [...args], { stdio: ["ignore", "pipe", "pipe"], shell: false, windowsHide: true, env, cwd })
+    let child: Child
+    try {
+      child = startChild(file, args, opts)
+    } catch (err) {
+      return reject(err)
+    }
     let done = false
 
     const finish = (action: () => void, kill = false): void => {
@@ -47,11 +80,9 @@ export function runCommand(file: string, args: readonly string[], opts: RunOptio
       action()
     }
     const onAbort = (): void => finish(() => reject(abortError(file)), true)
-    const timer = setTimeout(
-      () => finish(() => reject(new Error(`${file} timed out after ${timeoutMs} ms`)), true),
-      timeoutMs,
-    )
-    const overflow = (): void => finish(() => reject(new Error(`${file} output exceeded ${maxBytes} bytes`)), true)
+    const fail = (message: string) => (): void => finish(() => reject(new Error(message)), true)
+    const timer = setTimeout(fail(`${file} timed out after ${timeoutMs} ms`), timeoutMs)
+    const overflow = fail(`${file} output exceeded ${maxBytes} bytes`)
     const out = sink(maxBytes, overflow)
     const err = sink(maxBytes, overflow)
 

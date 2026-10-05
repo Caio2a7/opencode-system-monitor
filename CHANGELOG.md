@@ -17,6 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ### Performance
 
 - The card reuses its renderables on every refresh (`<Index>` plus memoized palette and layout) instead of destroying and recreating about 50 of them each tick.
+- A missing `nvidia-smi` is re-checked every 5 minutes instead of on every tick, failures back off exponentially (5 s up to 5 minutes), and a new `nvidia-smi` is never started while the previous one is still alive (a hung driver no longer piles up processes).
 
 ### Fixed
 
