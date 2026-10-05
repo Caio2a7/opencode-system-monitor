@@ -116,7 +116,8 @@ The card title keeps "System" in the theme text color; only the GPU temperature 
 
 | Temperature | Color  |
 | ----------- | ------ |
-| < 60 °C     | muted  |
+| ≤ 50 °C     | green (`success`) |
+| 50 → 60 °C  | fades green → yellow |
 | 60 °C       | yellow |
 | 75 °C       | orange |
 | 85 °C+      | red    |
