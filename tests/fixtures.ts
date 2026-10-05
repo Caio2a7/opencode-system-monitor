@@ -43,3 +43,22 @@ export const fullStats: SystemStats = {
   gpu: { util: 89, temp: 62, vramPercent: 58, vramUsedGiB: 4.6, vramTotalGiB: 8, name: "RTX" },
   swap: { percent: 12.5, usedGiB: 1, totalGiB: 8 },
 }
+
+// macOS Apple Silicon: 16384-byte pages; used = active + wired + compressor = 170000 pages
+export const VM_STAT = `Mach Virtual Memory Statistics: (page size of 16384 bytes)
+Pages free:                                3000.
+Pages active:                            100000.
+Pages inactive:                           90000.
+Pages speculative:                         2000.
+Pages throttled:                              0.
+Pages wired down:                         50000.
+Pages purgeable:                           5000.
+"Translation faults":                 123456789.
+Pages occupied by compressor:             20000.
+`
+
+export const SWAPUSAGE_M = "total = 2048.00M  used = 1080.25M  free = 967.75M  (encrypted)\n"
+export const SWAPUSAGE_G = "total = 4.00G  used = 1.00G  free = 3.00G  (encrypted)\n"
+
+// Win32_PageFileUsage: "<AllocatedBaseSize MB> <CurrentUsage MB>", CRLF
+export const PAGEFILE_OUT = "2048 512\r\n1024 256\r\n"
