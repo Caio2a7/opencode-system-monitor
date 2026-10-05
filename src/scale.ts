@@ -5,6 +5,7 @@ export const USAGE_HIGH = 65
 export const USAGE_MID = USAGE_HIGH / 2
 export const USAGE_WARN = 80
 export const USAGE_CRIT = 92
+export const TEMP_COOL = 50
 export const TEMP_WARN = 60
 export const TEMP_HOT = 75
 export const TEMP_CRIT = 85
@@ -71,8 +72,16 @@ export function usageColor(colors: Palette, kind: MetricKind, value: number): Co
   return lowColor(colors, kind, value)
 }
 
-/** Temperature: neutral below 60 °C; 60 yellow -> 75 orange -> 85 red. */
+/** Temperature: green up to 50 °C; 50 -> 60 green to yellow; 75 orange; 85 red. */
 export function tempColor(colors: Palette, tempC: number | null): Color {
-  if (tempC === null || tempC < TEMP_WARN) return lerp(colors.muted, colors.muted, 0)
-  return stops([[TEMP_WARN, colors.yellow], [TEMP_HOT, colors.warning], [TEMP_CRIT, colors.error]], tempC)
+  if (tempC === null) return lerp(colors.muted, colors.muted, 0)
+  return stops(
+    [
+      [TEMP_COOL, colors.success],
+      [TEMP_WARN, colors.yellow],
+      [TEMP_HOT, colors.warning],
+      [TEMP_CRIT, colors.error],
+    ],
+    tempC,
+  )
 }

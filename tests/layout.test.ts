@@ -171,8 +171,8 @@ describe("titleSegments", () => {
     expect(segs.filter((s) => s.fg !== tempColor(c, 62)).every((s) => s.fg === c.base)).toBe(true)
   })
 
-  test("cool temperatures are muted, hot ones red", () => {
-    expect(titleSegments(c, withTemp(40))[1]!.fg).toBe(c.muted)
+  test("cool temperatures are green, hot ones red", () => {
+    expect(titleSegments(c, withTemp(40))[1]!.fg).toBe(c.success)
     expect(titleSegments(c, withTemp(90))[1]!.fg).toBe(c.error)
   })
 })

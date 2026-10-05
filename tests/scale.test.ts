@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import {
+  TEMP_COOL,
   TEMP_CRIT,
   TEMP_HOT,
   TEMP_WARN,
@@ -21,7 +22,7 @@ const theme = (hex: string) => {
 describe("constants", () => {
   test("thresholds", () => {
     expect([USAGE_HIGH, USAGE_WARN, USAGE_CRIT]).toEqual([65, 80, 92])
-    expect([TEMP_WARN, TEMP_HOT, TEMP_CRIT]).toEqual([60, 75, 85])
+    expect([TEMP_COOL, TEMP_WARN, TEMP_HOT, TEMP_CRIT]).toEqual([50, 60, 75, 85])
   })
 })
 
@@ -111,10 +112,18 @@ describe("usageColor at and above the high threshold", () => {
 })
 
 describe("tempColor", () => {
-  test("null and cool temperatures are muted", () => {
+  test("null is muted", () => {
     expect(tempColor(c, null)).toBe(c.muted)
-    expect(tempColor(c, 0)).toBe(c.muted)
-    expect(tempColor(c, 59)).toBe(c.muted)
+  })
+
+  test("cool temperatures (<= 50) are green", () => {
+    expect(tempColor(c, 0)).toBe(c.success)
+    expect(tempColor(c, 45)).toBe(c.success)
+    expect(tempColor(c, 50)).toBe(c.success)
+  })
+
+  test("50 → 60 fades green → yellow", () => {
+    expect(tempColor(c, 55)).toBe(lerp(c.success, c.yellow, 0.5))
   })
 
   test("stops: 60 yellow, 75 warning, 85 error", () => {
@@ -129,6 +138,7 @@ describe("tempColor", () => {
   })
 
   test("above critical clamps to error", () => {
+    expect(tempColor(c, 100)).toBe(c.error)
     expect(tempColor(c, 120)).toBe(c.error)
   })
 })
