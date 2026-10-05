@@ -14,7 +14,7 @@ function fakeDeps(over: Partial<CollectorDeps> & { files?: Record<string, string
       if (!(path in files)) throw new Error(`ENOENT ${path}`)
       return files[path]!
     },
-    statfs: async () => ({ blocks: 1000, bfree: 400, bavail: 300 }),
+    statfs: async () => ({ bsize: 4096, blocks: 1000, bfree: 400, bavail: 300 }),
     runSmi: async () => SMI_LINE,
     run: async () => {
       throw new Error("run not faked")

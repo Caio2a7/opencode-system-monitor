@@ -1,7 +1,15 @@
-import type { GpuStats, RamStats, SwapStats } from "../types"
+import type { DiskStats, GpuStats, RamStats, SwapStats } from "../types"
 
 const KIB_PER_GIB = 1024 * 1024
 const MIB_PER_GIB = 1024
+const BYTES_PER_GIB = 1024 ** 3
+
+export interface FsStats {
+  bsize: number
+  blocks: number
+  bfree: number
+  bavail: number
+}
 
 export interface CpuTimes {
   idle: number
@@ -63,9 +71,10 @@ export function parseNvidiaSmi(stdout: string): GpuStats | null {
   }
 }
 
-/** Same formula as `df`: used / (used + available to unprivileged users). */
-export function diskPercent(fs: { blocks: number; bfree: number; bavail: number }): number | null {
-  const used = fs.blocks - fs.bfree
-  const denom = used + fs.bavail
-  return denom > 0 ? (used / denom) * 100 : null
+export function diskUsage(fs: FsStats, apfs = false): DiskStats | null {
+  const used = fs.blocks - (apfs ? fs.bavail : fs.bfree)
+  const total = apfs ? fs.blocks : used + fs.bavail
+  if (!(total > 0)) return null
+  const gib = (blocks: number) => (blocks * fs.bsize) / BYTES_PER_GIB
+  return { percent: (used / total) * 100, usedGiB: gib(used), totalGiB: gib(total) }
 }

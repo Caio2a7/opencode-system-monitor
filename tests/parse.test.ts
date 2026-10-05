@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import {
   cpuPercent,
-  diskPercent,
+  diskUsage,
   parseCpuTimes,
   parseMeminfo,
   parseNvidiaSmi,
@@ -114,13 +114,25 @@ describe("parseNvidiaSmi", () => {
   })
 })
 
-describe("diskPercent", () => {
-  test("uses (blocks-bfree) / ((blocks-bfree)+bavail)", () => {
-    expect(diskPercent({ blocks: 1000, bfree: 400, bavail: 300 })).toBeCloseTo((600 / 900) * 100, 10)
+describe("diskUsage", () => {
+  const GiB = 1024 ** 3
+  test("df formula: (blocks-bfree) / ((blocks-bfree)+bavail)", () => {
+    const d = diskUsage({ bsize: GiB, blocks: 1000, bfree: 400, bavail: 300 })!
+    expect(d.percent).toBeCloseTo((600 / 900) * 100, 10)
+    expect(d.usedGiB).toBe(600)
+    expect(d.totalGiB).toBe(900)
   })
 
-  test("null for empty filesystem", () => {
-    expect(diskPercent({ blocks: 0, bfree: 0, bavail: 0 })).toBeNull()
+  test("APFS: the container used share, (blocks-bavail) / blocks", () => {
+    const d = diskUsage({ bsize: GiB, blocks: 460, bfree: 450, bavail: 188 }, true)!
+    expect(d.percent).toBeCloseTo((272 / 460) * 100, 10)
+    expect(d.usedGiB).toBe(272)
+    expect(d.totalGiB).toBe(460)
+  })
+
+  test("null for an empty filesystem", () => {
+    expect(diskUsage({ bsize: 4096, blocks: 0, bfree: 0, bavail: 0 })).toBeNull()
+    expect(diskUsage({ bsize: 4096, blocks: 0, bfree: 0, bavail: 0 }, true)).toBeNull()
   })
 })
 

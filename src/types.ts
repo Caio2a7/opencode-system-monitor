@@ -32,6 +32,8 @@ export interface SwapStats {
 }
 export interface DiskStats {
   percent: number
+  usedGiB: number
+  totalGiB: number
 }
 export interface GpuStats {
   util: number

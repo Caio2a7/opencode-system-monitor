@@ -96,7 +96,7 @@ The plugin samples the system on a timer and renders a 31-column card inside a r
 | ---- | ------ | --------------------------------------------------------------- |
 | CPU  | usage  | per-platform, see [Platform support](#platform-support)         |
 | RAM  | usage  | per-platform, see [Platform support](#platform-support)         |
-| DISK | usage  | `statfs`, `df` formula                                          |
+| DISK | usage  | `statfs`: `df` formula, or the whole APFS container on macOS   |
 | GPU  | usage  | `nvidia-smi` utilization                                        |
 | VRAM | usage  | `nvidia-smi` memory                                             |
 | SWAP | usage  | per-platform, see [Platform support](#platform-support)         |
@@ -113,7 +113,7 @@ The plugin runs on Linux, macOS and Windows (package `os`: `linux`, `darwin`, `w
 | CPU           | `/proc/stat` (incl. iowait)              | `os.cpus()` deltas                             | `os.cpus()` deltas                                                                               |
 | RAM           | `/proc/meminfo` (MemTotal − MemAvailable) | `vm_stat` active + wired + compressed pages    | total − available physical memory                                                                |
 | Swap          | `/proc/meminfo`                          | `sysctl -n vm.swapusage`                       | page file usage via PowerShell `Get-CimInstance Win32_PageFileUsage`, refreshed at most every 30 s |
-| Disk          | `statfs("/")`                            | `statfs("/")` (APFS container)                 | `statfs` of the system drive (`%SystemDrive%`, default `C:\`)                                    |
+| Disk          | `statfs("/")`                            | `statfs("/")`, APFS container used / size      | `statfs` of the system drive (`%SystemDrive%`, default `C:\`)                                    |
 | GPU/VRAM/temp | `nvidia-smi`                             | not available (cells hidden)                   | `nvidia-smi` (NVIDIA drivers)                                                                    |
 
 Other platforms (e.g. FreeBSD) are best effort: CPU and RAM via Node's `os` module, swap hidden, disk `/`.

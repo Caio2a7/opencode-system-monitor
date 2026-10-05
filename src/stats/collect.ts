@@ -1,7 +1,7 @@
 import { readFile, statfs } from "node:fs/promises"
 import { cpus, freemem, totalmem } from "node:os"
 import type { CpuStats, DiskStats, GpuResult, SystemStats } from "../types"
-import { cpuPercent, diskPercent, parseNvidiaSmi } from "./parse"
+import { cpuPercent, diskUsage, parseNvidiaSmi } from "./parse"
 import type { CpuTimes } from "./parse"
 import { hasCode, messageOf } from "./errors"
 import { diskRoot } from "./parse-os"
@@ -21,7 +21,7 @@ const defaultDeps: CollectorDeps = {
   readText: (path) => readFile(path, "utf8"),
   statfs: async (path) => {
     const s = await statfs(path)
-    return { blocks: s.blocks, bfree: s.bfree, bavail: s.bavail }
+    return { bsize: s.bsize, blocks: s.blocks, bfree: s.bfree, bavail: s.bavail }
   },
   runSmi: (signal) => runTool("nvidia-smi", SMI_ARGS, signal),
   run: runTool,
@@ -69,10 +69,8 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
     prevCpu = next
     return next ? { percent: cpuPercent(prev, next) } : null
   }
-  const disk = async (): Promise<DiskStats | null> => {
-    const percent = diskPercent(await deps.statfs(diskRoot(deps.platform, deps.env)))
-    return percent === null ? null : { percent }
-  }
+  const disk = async (): Promise<DiskStats | null> =>
+    diskUsage(await deps.statfs(diskRoot(deps.platform, deps.env)), deps.platform === "darwin")
   const gpu = (signal?: AbortSignal): Promise<GpuResult> =>
     source.hasGpu ? collectGpu(deps, signal) : Promise.resolve(null)
 

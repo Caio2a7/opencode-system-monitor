@@ -39,7 +39,7 @@ export const SMI_LINE = "89, 4746, 8188, 62, NVIDIA GeForce RTX 4060 Laptop GPU\
 export const fullStats: SystemStats = {
   cpu: { percent: 30 },
   ram: { percent: 56, usedGiB: 8.9, totalGiB: 15.9 },
-  disk: { percent: 46 },
+  disk: { percent: 46, usedGiB: 230, totalGiB: 500 },
   gpu: { util: 89, temp: 62, vramPercent: 58, vramUsedGiB: 4.6, vramTotalGiB: 8, name: "RTX" },
   swap: { percent: 12.5, usedGiB: 1, totalGiB: 8 },
 }

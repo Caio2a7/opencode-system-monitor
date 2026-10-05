@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Security
+
+- System tools are spawned by absolute path (fixed system locations or absolute `PATH` entries only), from their own directory and with an allowlisted environment. Before, a `nvidia-smi.exe` or `powershell.exe` inside the opened project ran on Windows, and API keys were inherited by every child process.
+
+### Fixed
+
+- Child process output is decoded after all bytes arrive, so multibyte characters split across chunks are no longer corrupted.
+- macOS DISK measured the sealed system volume and showed a few percent on a full disk; it now reports the APFS container usage.
+
 ## [0.2.0] - 2026-10-05
 
 ### Added

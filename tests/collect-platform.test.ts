@@ -11,7 +11,7 @@ function setup(platform: string, over: Partial<CollectorDeps> = {}) {
   const calls = { run: [] as Array<[string, readonly string[]]>, smi: 0, read: 0, statfs: [] as string[] }
   const deps: CollectorDeps = {
     readText: async () => { calls.read++; throw new Error("readText must not be used") },
-    statfs: async (p) => { calls.statfs.push(p); return { blocks: 1000, bfree: 400, bavail: 300 } },
+    statfs: async (p) => { calls.statfs.push(p); return { bsize: 4096, blocks: 1000, bfree: 950, bavail: 400 } },
     runSmi: async () => { calls.smi++; return SMI_LINE },
     run: async (file, args) => {
       calls.run.push([file, args])
@@ -53,6 +53,11 @@ describe("darwin", () => {
     expect(calls.statfs).toEqual(["/"])
     expect(calls.run).toContainEqual(["vm_stat", []])
     expect(calls.run).toContainEqual(["sysctl", ["-n", "vm.swapusage"]])
+  })
+
+  test("disk measures the APFS container, not the sealed system volume", async () => {
+    const { deps } = setup("darwin")
+    expect((await createCollector(deps).collect()).disk?.percent).toBeCloseTo(60, 10)
   })
 
   test("failing vm_stat leaves swap intact", async () => {
@@ -119,6 +124,11 @@ describe("win32", () => {
     state.now += 20_000
     await c.collect()
     expect(ps(calls)).toHaveLength(2)
+  })
+
+  test("disk uses the df formula outside macOS", async () => {
+    const { deps } = setup("win32")
+    expect((await createCollector(deps).collect()).disk?.percent).toBeCloseTo((50 / 450) * 100, 10)
   })
 
   test("disk root follows SystemDrive", async () => {
