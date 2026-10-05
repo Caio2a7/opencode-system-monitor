@@ -21,6 +21,6 @@ What the plugin does, and what is therefore in scope:
 - Reads `/proc/stat`, `/proc/meminfo`, `/proc/net/dev` and `statfs("/")`.
 - Spawns `nvidia-smi` with a fixed argument list, no shell and a 3 s timeout.
 - Makes no network requests, sends no telemetry and has no runtime dependencies.
-- Releases are published to npm with provenance from GitHub Actions.
+- v0.1.0 was published manually; releases from v0.1.1 onward are published from GitHub Actions via npm trusted publishing (OIDC) with provenance.
 
 Out of scope: vulnerabilities in OpenCode itself, in `nvidia-smi` or in your operating system.

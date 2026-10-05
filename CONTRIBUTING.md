@@ -35,18 +35,14 @@ Run `bun install && bun run build`, add the checkout's absolute path to the `plu
 
 ## Release process
 
-Before the first tag, set up npm authentication (one of):
-
-- Add an `NPM_TOKEN` repository secret (an npm granular automation token with publish rights).
-- Or configure a trusted publisher on npmjs.com (repository `Caio2a7/opencode-system-monitor`, workflow
-  `release.yml`); after that the `NPM_TOKEN` secret can be removed.
+Publishing uses npm trusted publishing (repo `Caio2a7/opencode-system-monitor`, workflow `release.yml`) — no token needed.
 
 Then:
 
 1. Bump `version` in `package.json`.
 2. Move the `CHANGELOG.md` entries under the new version heading with the release date.
 3. Commit to `main`, then tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-4. GitHub Actions publishes to npm with provenance.
+4. GitHub Actions publishes to npm with provenance (from v0.1.1 onward; v0.1.0 was published manually).
 
 The tag must point to a commit on `main` (otherwise the release workflow fails) and must equal the `package.json`
 version.

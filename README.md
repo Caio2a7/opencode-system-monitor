@@ -128,7 +128,7 @@ The card title keeps "System" in the theme text color; only the GPU temperature 
 - No shell. The plugin reads `/proc/stat`, `/proc/meminfo` and `statfs("/")`.
 - The only subprocess is `nvidia-smi`, spawned with a fixed argument list (no shell) and a 3 s timeout.
 - Zero runtime dependencies.
-- Published to npm with provenance from GitHub Actions.
+- v0.1.0 was published manually; releases from v0.1.1 onward are published from GitHub Actions via npm trusted publishing (OIDC) with provenance.
 
 See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
