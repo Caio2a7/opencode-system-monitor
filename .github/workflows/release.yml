@@ -50,14 +50,11 @@ jobs:
             exit 1
           fi
 
-      # Auth: the first release needs either the NPM_TOKEN repo secret (a
-      # granular automation token, used via NODE_AUTH_TOKEN) OR a trusted
-      # publisher configured on npmjs.com for this repo/workflow. With trusted
-      # publishing (OIDC, npm >= 11.5.1) the secret can be removed.
+      # Auth: publishing uses npm trusted publishing (OIDC, npm >= 11.5.1).
+      # Trusted publisher on npmjs.com: Caio2a7/opencode-system-monitor,
+      # workflow release.yml. No secret or token is needed.
       - name: Publish to npm
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
