@@ -1,11 +1,12 @@
 # opencode-system-monitor
 
-**A system monitor plugin for the OpenCode TUI sidebar — live CPU, RAM, disk, NVIDIA GPU, VRAM and swap usage bars, btop-style, themed by your OpenCode theme.**
+**A cross-platform system monitor plugin for the OpenCode TUI sidebar (Linux, macOS, Windows) — live CPU, RAM, disk, NVIDIA GPU, VRAM and swap usage bars, btop-style, themed by your OpenCode theme.**
 
 [![npm version](https://img.shields.io/npm/v/opencode-system-monitor.svg)](https://www.npmjs.com/package/opencode-system-monitor)
 [![npm downloads](https://img.shields.io/npm/dm/opencode-system-monitor.svg)](https://www.npmjs.com/package/opencode-system-monitor)
 [![CI](https://github.com/Caio2a7/opencode-system-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/Caio2a7/opencode-system-monitor/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/opencode-system-monitor.svg)](LICENSE)
+[![platforms](https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-lightgrey.svg)](#platform-support)
 [![OpenCode V2](https://img.shields.io/badge/OpenCode-V2-blue.svg)](https://opencode.ai)
 
 An [OpenCode](https://opencode.ai) V2 CLI/TUI plugin that renders a compact rounded card in the sidebar with live
@@ -27,19 +28,20 @@ puts a small resource monitor (think btop or htop, reduced to six lines) right n
 
 ## Features
 
-- CPU, RAM, DISK (root filesystem `/`), GPU utilization, VRAM and SWAP usage bars.
+- Works on Linux, macOS and Windows (see [Platform support](#platform-support)).
+- CPU, RAM, DISK (root filesystem, or the system drive on Windows), GPU utilization, VRAM and SWAP usage bars.
 - GPU temperature in the card title, colored by temperature while "System" keeps the theme text color.
 - Refreshes every 2 seconds by default (`refreshMs`, 500–60000).
 - Colors come entirely from the active OpenCode theme; theme changes apply live.
-- Without `nvidia-smi` the GPU and VRAM cells disappear and the second row shows only SWAP.
+- Without `nvidia-smi` (and always on macOS) the GPU and VRAM cells disappear and the second row shows only SWAP.
 - Zero runtime dependencies, no network requests, no telemetry.
 
 ## Requirements
 
 - OpenCode **V2**. CLI plugins are configured in `~/.config/opencode/cli.json`, not `opencode.json`. The V1
   `tui.json` format is not supported.
-- Linux (reads `/proc` and `statfs`).
-- Optional: an NVIDIA GPU with `nvidia-smi` on `PATH` for the GPU, VRAM and temperature readouts.
+- Linux, macOS or Windows (other platforms such as FreeBSD: best effort).
+- Optional: an NVIDIA GPU with `nvidia-smi` on `PATH` (Linux and Windows) for the GPU, VRAM and temperature readouts.
 
 ## Install the OpenCode plugin
 
@@ -90,17 +92,31 @@ The card is rendered in the `sidebar.content` slot, so the sidebar must be visib
 
 The plugin samples the system on a timer and renders a 31-column card inside a rounded border.
 
-| Row  | Metric | Source                                                                                    |
-| ---- | ------ | ----------------------------------------------------------------------------------------- |
-| CPU  | usage  | `/proc/stat`                                                                              |
-| RAM  | usage  | `/proc/meminfo`                                                                           |
-| DISK | usage  | `statfs("/")`, `df` formula                                                               |
-| GPU  | usage  | `nvidia-smi` utilization                                                                  |
-| VRAM | usage  | `nvidia-smi` memory                                                                       |
-| SWAP | usage  | `/proc/meminfo` (`SwapTotal`, `SwapFree`), same read as RAM                                |
+| Row  | Metric | Source                                                          |
+| ---- | ------ | --------------------------------------------------------------- |
+| CPU  | usage  | per-platform, see [Platform support](#platform-support)         |
+| RAM  | usage  | per-platform, see [Platform support](#platform-support)         |
+| DISK | usage  | `statfs`, `df` formula                                          |
+| GPU  | usage  | `nvidia-smi` utilization                                        |
+| VRAM | usage  | `nvidia-smi` memory                                             |
+| SWAP | usage  | per-platform, see [Platform support](#platform-support)         |
 
 SWAP shows `—` when the system has no swap. The GPU temperature is shown in the card
 title (` System · 62° `).
+
+## Platform support
+
+The plugin runs on Linux, macOS and Windows (package `os`: `linux`, `darwin`, `win32`).
+
+| Metric        | Linux                                    | macOS                                          | Windows                                                                                          |
+| ------------- | ---------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| CPU           | `/proc/stat` (incl. iowait)              | `os.cpus()` deltas                             | `os.cpus()` deltas                                                                               |
+| RAM           | `/proc/meminfo` (MemTotal − MemAvailable) | `vm_stat` active + wired + compressed pages    | total − available physical memory                                                                |
+| Swap          | `/proc/meminfo`                          | `sysctl -n vm.swapusage`                       | page file usage via PowerShell `Get-CimInstance Win32_PageFileUsage`, refreshed at most every 30 s |
+| Disk          | `statfs("/")`                            | `statfs("/")` (APFS container)                 | `statfs` of the system drive (`%SystemDrive%`, default `C:\`)                                    |
+| GPU/VRAM/temp | `nvidia-smi`                             | not available (cells hidden)                   | `nvidia-smi` (NVIDIA drivers)                                                                    |
+
+Other platforms (e.g. FreeBSD) are best effort: CPU and RAM via Node's `os` module, swap hidden, disk `/`.
 
 ## How the bars are colored
 
@@ -125,8 +141,10 @@ The card title keeps "System" in the theme text color; only the GPU temperature 
 ## Privacy & security
 
 - No network requests and no telemetry.
-- No shell. The plugin reads `/proc/stat`, `/proc/meminfo` and `statfs("/")`.
-- The only subprocess is `nvidia-smi`, spawned with a fixed argument list (no shell) and a 3 s timeout.
+- No shell. Metrics come from `/proc` (Linux), Node's `os` module and `statfs`.
+- Child processes are spawned with fixed argument lists, `shell: false`, a 3 s timeout and a 64 KiB output cap:
+  `nvidia-smi` (Linux, Windows), `vm_stat` and `sysctl -n vm.swapusage` (macOS), and
+  `powershell.exe -NoProfile -NonInteractive -Command <constant script>` (Windows, at most every 30 s).
 - Zero runtime dependencies.
 - v0.1.0 was published manually; releases from v0.1.1 onward are published from GitHub Actions via npm trusted publishing (OIDC) with provenance.
 
@@ -138,9 +156,10 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 | ------------------------------------ | ------------------------------------------------------------------------------------------ |
 | Nothing in the sidebar               | Open a session, widen the terminal and check that the sidebar is visible.                  |
 | Plugin not loaded                    | Make sure it is listed in `~/.config/opencode/cli.json` (V2), then restart the TUI.        |
-| No GPU or VRAM cells                 | Expected without `nvidia-smi`; the second row shows only SWAP.                             |
+| No GPU or VRAM cells                 | Expected without `nvidia-smi`, and always on macOS; the second row shows only SWAP.        |
 | GPU and VRAM show `—`                | `nvidia-smi` is installed but failed or timed out (3 s). Run it in the same terminal.      |
-| macOS or Windows                     | Not supported; the plugin reads Linux `/proc`.                                             |
+| Windows swap missing at start        | Swap appears up to 30 s after start (PowerShell query is throttled).                       |
+| SWAP shows `—` on Windows            | PowerShell may be blocked by execution policy; swap is hidden, other metrics still work.   |
 | OpenCode V1 (`tui.json`)             | Not supported; use OpenCode V2.                                                            |
 
 Plugin load errors are logged to `~/.local/share/opencode/log/opencode.log`.
@@ -153,6 +172,10 @@ Install this plugin: add `opencode-system-monitor` to `~/.config/opencode/cli.js
 **Does it support AMD or Intel GPUs?**
 No. GPU utilization, VRAM and temperature come from `nvidia-smi`, so only NVIDIA GPUs are supported. Without it the GPU
 and VRAM cells are hidden.
+
+**Does it work on macOS / Windows?**
+Yes, since v0.2.0. Linux, macOS and Windows are supported; see [Platform support](#platform-support). macOS has no GPU
+row.
 
 **Does it work with OpenCode V1?**
 No. It targets the OpenCode V2 plugin API and `cli.json`.
@@ -167,6 +190,7 @@ bun install
 bun test
 bun run typecheck
 bun run build   # bundles src/tui.tsx to dist/tui.js
+bun run smoke   # real-machine smoke test
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).

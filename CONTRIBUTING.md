@@ -9,22 +9,24 @@ bun install
 bun test
 bun run typecheck
 bun run build
+bun run smoke
 ```
 
 | Script              | Purpose                                                              |
 | ------------------- | -------------------------------------------------------------------- |
 | `bun test`          | Run the test suite (`bun:test`).                                     |
 | `bun run typecheck` | Strict TypeScript check.                                             |
+| `bun run smoke`     | Smoke test against the real machine (CPU, RAM, swap, disk, GPU on the current OS). |
 | `bun run build`     | Bundle `src/tui.tsx` to `dist/tui.js`, rewriting solid/opentui imports to the host's runtime module ids. |
 
-CI runs test, typecheck, build and a pack dry-run.
+CI runs typecheck, tests, build and the real-machine smoke test (`bun run smoke`) on Ubuntu, macOS and Windows.
 
 ## Guidelines
 
 - Strict TypeScript; no `any`, no stubs.
 - Keep files under 300 lines and functions under 40 lines.
 - No new runtime dependencies without a strong reason.
-- Keep the plugin local-only: no network requests, no telemetry, no shell. Subprocesses use fixed argument lists.
+- Keep the plugin local-only: no network requests, no telemetry, no shell. Subprocesses use fixed argument lists, `shell: false`, a timeout and an output cap.
 - Add or update tests in `tests/` for any behaviour change.
 - Use [Conventional Commits](https://www.conventionalcommits.org/) in English and update `CHANGELOG.md`.
 
