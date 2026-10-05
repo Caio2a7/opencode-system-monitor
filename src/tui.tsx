@@ -8,7 +8,7 @@ import type { SystemStats } from "./types"
 import { MonitorView } from "./view"
 
 const ID = "opencode-system-monitor"
-const EMPTY: SystemStats = { cpu: null, ram: null, disk: null, gpu: null, swap: null }
+const EMPTY: SystemStats = { cpu: null, ram: null, disk: null, gpu: null, swap: null, errors: {} }
 const PRIME_MS = 500
 
 type Collector = ReturnType<typeof createCollector>

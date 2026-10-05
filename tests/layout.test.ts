@@ -130,7 +130,7 @@ describe("gridRows degraded inputs", () => {
   })
 
   test("everything missing still yields 9-column cells", () => {
-    const empty: SystemStats = { cpu: null, ram: null, disk: null, gpu: null, swap: null }
+    const empty: SystemStats = { cpu: null, ram: null, disk: null, gpu: null, swap: null, errors: {} }
     for (const cell of gridRows(c, empty).flat()) {
       expect(cols(flat(cell.label))).toBe(9)
       expect(cols(flat(cell.bar))).toBe(9)

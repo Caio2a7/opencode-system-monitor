@@ -1,4 +1,5 @@
 import type { DiskStats, GpuStats, RamStats, SwapStats } from "../types"
+import { cleanText } from "./errors"
 import { BYTES_PER_GIB, BYTES_PER_KIB, ramFromTotals, swapFromUsed } from "./memory"
 
 const MIB_PER_GIB = 1024
@@ -68,7 +69,7 @@ export function parseNvidiaSmi(stdout: string): GpuStats | null {
   const [util, used, total, temp] = fields.slice(0, 4).map(Number) as [number, number, number, number]
   if (![util, used, total].every(Number.isFinite)) return null
   return {
-    name: fields.slice(4).join(","),
+    name: cleanText(fields.slice(4).join(",")),
     util,
     temp: Number.isFinite(temp) ? temp : null,
     vramPercent: total > 0 ? (used / total) * 100 : 0,

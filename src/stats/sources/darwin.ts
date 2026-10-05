@@ -16,7 +16,7 @@ export function darwinSource(deps: CollectorDeps): StatsSource {
     },
     async memory(signal) {
       const [r, s] = await Promise.all([ram(signal), swap(signal)])
-      return { ram: r.value, swap: s.value }
+      return { ram: r.value, swap: s.value, errors: { ram: r.error, swap: s.error } }
     },
   }
 }

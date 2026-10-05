@@ -15,7 +15,8 @@ export function win32Source(deps: CollectorDeps): StatsSource {
       return cpuTimesFromCpus(deps.cpus())
     },
     async memory(signal) {
-      return { ram: ramFromTotals(deps.totalmem(), deps.freemem()), swap: (await swap(signal)).value }
+      const s = await swap(signal)
+      return { ram: ramFromTotals(deps.totalmem(), deps.freemem()), swap: s.value, errors: { swap: s.error } }
     },
   }
 }

@@ -102,6 +102,29 @@ describe("createCollector", () => {
     expect(stats.gpu).toEqual({ error: "nope" })
   })
 
+  test("errors are kept per metric", async () => {
+    const { deps } = fakeDeps({ statfs: async () => { throw new Error("statfs failed") } })
+    const readText = deps.readText
+    deps.readText = async (p) => {
+      if (p === "/proc/meminfo") throw new Error("meminfo gone")
+      return readText(p)
+    }
+    deps.run = async () => { throw new Error("driver mismatch") }
+    const { errors } = await createCollector(deps).collect()
+    expect(errors).toEqual({ ram: "meminfo gone", swap: "meminfo gone", disk: "statfs failed", gpu: "driver mismatch" })
+  })
+
+  test("no errors when everything works", async () => {
+    expect((await createCollector(fakeDeps().deps).collect()).errors).toEqual({})
+  })
+
+  test("error text from external tools cannot carry terminal escape sequences", async () => {
+    const { deps } = fakeDeps({ run: async () => { throw new Error("\u001b]52;c;cHduZWQ=\u0007\u001b[2J boom\nnext") } })
+    const { errors } = await createCollector(deps).collect()
+    expect(errors.gpu).toBe("]52;c;cHduZWQ= [2J boom next")
+    expect(errors.gpu).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/)
+  })
+
   test("collector instances do not share state", async () => {
     const a = fakeDeps()
     const b = fakeDeps()

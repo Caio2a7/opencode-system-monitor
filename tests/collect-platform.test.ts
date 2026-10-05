@@ -81,6 +81,7 @@ describe("darwin", () => {
     const s = await createCollector(deps).collect()
     expect(s.ram).toBeNull()
     expect(s.swap).not.toBeNull()
+    expect(s.errors).toEqual({ ram: "x" })
   })
 
   test("failing sysctl leaves ram intact", async () => {
@@ -131,7 +132,9 @@ describe("win32", () => {
     const { deps, state, calls } = setup("win32")
     deps.run = async (f, a) => { calls.run.push([f, a]); throw new Error("blocked") }
     const c = createCollector(deps)
-    expect((await c.collect()).swap).toBeNull()
+    const first = await c.collect()
+    expect(first.swap).toBeNull()
+    expect(first.errors.swap).toBe("blocked")
     state.now += 10_000
     expect((await c.collect()).swap).toBeNull()
     expect(ps(calls)).toHaveLength(1)

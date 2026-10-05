@@ -59,6 +59,7 @@ export const fullStats: SystemStats = {
   disk: { percent: 46, usedGiB: 230, totalGiB: 500 },
   gpu: { util: 89, temp: 62, vramPercent: 58, vramUsedGiB: 4.6, vramTotalGiB: 8, name: "RTX" },
   swap: { percent: 12.5, usedGiB: 1, totalGiB: 8 },
+  errors: {},
 }
 
 // macOS Apple Silicon: 16384-byte pages; used = active + wired + compressor = 170000 pages

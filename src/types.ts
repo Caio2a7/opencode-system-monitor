@@ -45,12 +45,16 @@ export interface GpuStats {
 }
 /** `null` means nvidia-smi is not installed. */
 export type GpuResult = GpuStats | { error: string } | { suspended: true } | null
+export type MetricName = "cpu" | "ram" | "swap" | "disk" | "gpu"
+export type MetricErrors = Partial<Record<MetricName, string>>
+
 export interface SystemStats {
   cpu: CpuStats | null
   ram: RamStats | null
   disk: DiskStats | null
   gpu: GpuResult
   swap: SwapStats | null
+  errors: MetricErrors
 }
 
 export type MetricKind = "cpu" | "ram" | "disk" | "gpu" | "vram" | "swap"

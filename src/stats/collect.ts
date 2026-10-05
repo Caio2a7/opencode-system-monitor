@@ -1,6 +1,7 @@
 import { readdir, readFile, statfs } from "node:fs/promises"
 import { cpus, freemem, totalmem } from "node:os"
-import type { CpuStats, DiskStats, GpuResult, SystemStats } from "../types"
+import type { CpuStats, DiskStats, GpuResult, MetricErrors, SystemStats } from "../types"
+import { cleanText, messageOf } from "./errors"
 import { createGpuProbe, SMI_ARGS } from "./gpu"
 import { cpuPercent, diskUsage } from "./parse"
 import type { CpuTimes } from "./parse"
@@ -33,6 +34,27 @@ const defaultDeps: CollectorDeps = {
 }
 
 const settled = <T>(r: PromiseSettledResult<T | null>): T | null => (r.status === "fulfilled" ? r.value : null)
+
+const reason = (r: PromiseSettledResult<unknown>): string | undefined =>
+  r.status === "rejected" ? messageOf(r.reason) : undefined
+
+function errorsOf(
+  [c, m, d]: [PromiseSettledResult<unknown>, PromiseSettledResult<MemoryStats>, PromiseSettledResult<unknown>],
+  gpu: GpuResult,
+): MetricErrors {
+  const memory = reason(m)
+  const reported = m.status === "fulfilled" ? m.value.errors : undefined
+  const found: MetricErrors = {
+    cpu: reason(c),
+    ram: memory ?? reported?.ram,
+    swap: memory ?? reported?.swap,
+    disk: reason(d),
+    gpu: gpu && "error" in gpu ? gpu.error : undefined,
+  }
+  return Object.fromEntries(
+    Object.entries(found).flatMap(([key, text]) => (text ? [[key, cleanText(text)]] : [])),
+  ) as MetricErrors
+}
 
 function sourceFor(deps: CollectorDeps): StatsSource {
   switch (deps.platform) {
@@ -72,12 +94,14 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
     async collect(signal) {
       const [c, m, d, g] = await Promise.allSettled([cpu(), source.memory(signal), disk(), gpu(signal)])
       const mem: MemoryStats | null = m.status === "fulfilled" ? m.value : null
+      const gpuResult = g.status === "fulfilled" ? g.value : null
       return {
         cpu: settled(c),
         ram: mem?.ram ?? null,
         disk: settled(d),
-        gpu: g.status === "fulfilled" ? g.value : null,
+        gpu: gpuResult,
         swap: mem?.swap ?? null,
+        errors: errorsOf([c, m, d], gpuResult),
       }
     },
   }

@@ -1,5 +1,5 @@
 import type { GpuResult } from "../types"
-import { hasCode, messageOf } from "./errors"
+import { cleanText, hasCode, messageOf } from "./errors"
 import { parseNvidiaSmi } from "./parse"
 
 export const SMI_ARGS = [
@@ -26,7 +26,7 @@ export function createGpuProbe(deps: GpuProbeDeps): (signal?: AbortSignal) => Pr
     failures = missing ? 0 : failures + 1
     const delay = missing ? MISSING_RETRY_MS : Math.min(BACKOFF_BASE_MS * 2 ** (failures - 1), BACKOFF_MAX_MS)
     retryAt = deps.now() + delay
-    last = missing ? null : { error: messageOf(err) }
+    last = missing ? null : { error: cleanText(messageOf(err)) }
   }
 
   return async (signal) => {

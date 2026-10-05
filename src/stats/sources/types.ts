@@ -1,4 +1,4 @@
-import type { RamStats, SwapStats } from "../../types"
+import type { MetricErrors, RamStats, SwapStats } from "../../types"
 import type { CpuTimes, FsStats } from "../parse"
 import type { Tool } from "../tools"
 
@@ -18,6 +18,7 @@ export interface CollectorDeps {
 export interface MemoryStats {
   ram: RamStats | null
   swap: SwapStats | null
+  errors?: Pick<MetricErrors, "ram" | "swap">
 }
 
 /** Platform-specific metric sources; each method may reject, the collector maps that to null. */

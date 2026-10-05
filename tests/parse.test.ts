@@ -113,6 +113,10 @@ describe("parseNvidiaSmi", () => {
     expect(gpu.vramTotalGiB).toBeCloseTo(8188 / 1024, 10)
   })
 
+  test("control characters in the GPU name are neutralized", () => {
+    expect(parseNvidiaSmi("1, 2, 3, 4, Evil\u001b[2JGPU\n")!.name).toBe("Evil [2JGPU")
+  })
+
   test("ignores additional GPU lines", () => {
     const gpu = parseNvidiaSmi(`${SMI_LINE}10, 1, 2, 30, Other\n`)!
     expect(gpu.util).toBe(89)
