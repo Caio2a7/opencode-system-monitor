@@ -28,7 +28,7 @@ const defaultDeps: CollectorDeps = {
   cpus: cpus,
   totalmem,
   freemem,
-  now: Date.now,
+  now: () => performance.now(),
   platform: process.platform,
   env: process.env,
 }
