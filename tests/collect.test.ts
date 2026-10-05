@@ -16,6 +16,15 @@ function fakeDeps(over: Partial<CollectorDeps> & { files?: Record<string, string
     },
     statfs: async () => ({ blocks: 1000, bfree: 400, bavail: 300 }),
     runSmi: async () => SMI_LINE,
+    run: async () => {
+      throw new Error("run not faked")
+    },
+    cpus: () => [],
+    totalmem: () => 0,
+    freemem: () => 0,
+    now: () => 0,
+    platform: "linux",
+    env: {},
     ...rest,
   }
   return { deps, files }
@@ -83,7 +92,7 @@ describe("createCollector", () => {
 
   test("never throws even if every dependency rejects", async () => {
     const fail = async () => { throw new Error("nope") }
-    const c = createCollector({ readText: fail, statfs: fail, runSmi: fail })
+    const c = createCollector({ readText: fail, statfs: fail, runSmi: fail, platform: "linux" })
     const stats = await c.collect()
     expect(stats.cpu).toBeNull()
     expect(stats.ram).toBeNull()
