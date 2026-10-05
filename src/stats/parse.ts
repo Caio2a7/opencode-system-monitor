@@ -1,8 +1,7 @@
 import type { DiskStats, GpuStats, RamStats, SwapStats } from "../types"
+import { BYTES_PER_GIB, BYTES_PER_KIB, ramFromTotals, swapFromUsed } from "./memory"
 
-const KIB_PER_GIB = 1024 * 1024
 const MIB_PER_GIB = 1024
-const BYTES_PER_GIB = 1024 ** 3
 
 export interface FsStats {
   bsize: number
@@ -50,18 +49,16 @@ function meminfoKib(text: string, key: string): number | null {
 export function parseMeminfo(meminfo: string): RamStats | null {
   const total = meminfoKib(meminfo, "MemTotal")
   const available = meminfoKib(meminfo, "MemAvailable")
-  if (total === null || available === null || total <= 0) return null
-  const used = total - available
-  return { percent: (used / total) * 100, usedGiB: used / KIB_PER_GIB, totalGiB: total / KIB_PER_GIB }
+  if (total === null || available === null) return null
+  return ramFromTotals(total * BYTES_PER_KIB, available * BYTES_PER_KIB)
 }
 
 /** used = SwapTotal - SwapFree; null when swap is absent (SwapTotal 0 or missing). */
 export function parseSwap(meminfo: string): SwapStats | null {
   const total = meminfoKib(meminfo, "SwapTotal")
   const free = meminfoKib(meminfo, "SwapFree")
-  if (total === null || free === null || total <= 0) return null
-  const used = Math.max(0, total - free)
-  return { percent: (used / total) * 100, usedGiB: used / KIB_PER_GIB, totalGiB: total / KIB_PER_GIB }
+  if (total === null || free === null) return null
+  return swapFromUsed((total - free) * BYTES_PER_KIB, total * BYTES_PER_KIB)
 }
 
 /** Parses the first GPU line of `--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu,name`. */

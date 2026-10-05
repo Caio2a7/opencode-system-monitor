@@ -1,10 +1,9 @@
 import type { RamStats } from "../../types"
 import { cgroupRam, findCgroupMemory, type CgroupMemory } from "../cgroup"
+import { BYTES_PER_GIB } from "../memory"
 import { allSuspended, findNvidiaGpus } from "../nvidia-pm"
 import { parseCpuTimes, parseMeminfo, parseSwap } from "../parse"
 import type { CollectorDeps, StatsSource } from "./types"
-
-const BYTES_PER_GIB = 1024 ** 3
 
 export function linuxSource(deps: CollectorDeps): StatsSource {
   let cgroup: Promise<CgroupMemory | null> | undefined

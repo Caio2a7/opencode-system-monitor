@@ -1,5 +1,5 @@
 import type { RamStats } from "../types"
-import { ramFromTotals } from "./parse-os"
+import { ramFromUsed } from "./memory"
 
 type ReadText = (path: string) => Promise<string>
 
@@ -75,5 +75,5 @@ export async function cgroupRam(read: ReadText, cgroup: CgroupMemory, hostTotalB
   const limit = parseLimit(limitText)
   if (!(limit > 0 && limit < hostTotalBytes)) return null
   const used = Number(usageText.trim()) - (statValue(stat, files.inactiveKey) ?? 0)
-  return Number.isFinite(used) ? ramFromTotals(limit, limit - used) : null
+  return ramFromUsed(used, limit)
 }

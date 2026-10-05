@@ -70,6 +70,10 @@ describe("parseMeminfo", () => {
     ["garbage", "not a meminfo file"],
   ])("returns null for %s", (_n, input) => expect(parseMeminfo(input)).toBeNull())
 
+  test("clamps an available value above total to 0% used, like the other platforms", () => {
+    expect(parseMeminfo("MemTotal: 100 kB\nMemAvailable: 150 kB\n")!.percent).toBe(0)
+  })
+
   test("returns null when MemTotal is zero (no divide-by-zero)", () => {
     expect(parseMeminfo("MemTotal: 0 kB\nMemAvailable: 0 kB\n")).toBeNull()
   })
@@ -81,6 +85,10 @@ describe("parseSwap", () => {
     expect(swap.percent).toBeCloseTo(12.5, 10)
     expect(swap.totalGiB).toBeCloseTo(8, 10)
     expect(swap.usedGiB).toBeCloseTo(1, 10)
+  })
+
+  test("clamps a free value above total to 0% used", () => {
+    expect(parseSwap("SwapTotal: 100 kB\nSwapFree: 150 kB\n")!.percent).toBe(0)
   })
 
   test("returns null when swap is disabled (SwapTotal 0)", () => {
