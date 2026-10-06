@@ -56,9 +56,10 @@ function swapStats(usedBytes: number, totalBytes: number): SwapStats | null {
 }
 
 function swapField(stdout: string, key: string): number | null {
-  const match = new RegExp(`${key}\\s*=\\s*([\\d.]+)\\s*([KMGT])`, "i").exec(stdout)
+  const match = new RegExp(`\\b${key}\\s*=\\s*(\\d+(?:[.,]\\d+)?)\\s*([KMGT])B?\\b`, "i").exec(stdout)
   const unit = UNIT_BYTES[match?.[2]?.toUpperCase() ?? ""]
-  return match?.[1] === undefined || unit === undefined ? null : Number(match[1]) * unit
+  if (match?.[1] === undefined || unit === undefined) return null
+  return Number(match[1].replace(",", ".")) * unit
 }
 
 /** macOS `sysctl -n vm.swapusage`. */

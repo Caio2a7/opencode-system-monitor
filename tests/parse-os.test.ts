@@ -85,6 +85,15 @@ describe("parseSwapUsage", () => {
   test("zero total -> null", () => {
     expect(parseSwapUsage("total = 0.00M  used = 0.00M  free = 0.00M  (encrypted)")).toBeNull()
   })
+  test("parses comma decimal separators (pt_BR / European locales) and optional B suffix", () => {
+    const comma = parseSwapUsage("total = 2048,00M  used = 1080,25M  free = 967,75M  (encrypted)\n")!
+    expect(comma.totalGiB).toBeCloseTo(2, 10)
+    expect(comma.usedGiB).toBeCloseTo(1080.25 / 1024, 10)
+    expect(comma.percent).toBeCloseTo((1080.25 / 2048) * 100, 10)
+
+    const suffix = parseSwapUsage("total = 4,00GB  used = 1,00GB  free = 3,00GB")!
+    expect(suffix).toEqual({ percent: 25, usedGiB: 1, totalGiB: 4 })
+  })
   test("garbage -> null", () => {
     expect(parseSwapUsage("")).toBeNull()
     expect(parseSwapUsage("sysctl: unknown oid")).toBeNull()
