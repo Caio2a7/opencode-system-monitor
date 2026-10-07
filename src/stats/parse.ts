@@ -17,6 +17,9 @@ export function parseCpuTimes(procStat: string): CpuTimes | null {
   return { idle: (values[3] ?? 0) + (values[4] ?? 0), total: values.reduce((a, b) => a + b, 0) }
 }
 
+const clampPct = (n: number): number => Math.max(0, Math.min(100, n))
+const SMI_NA = /^\[?(?:N\/A|Not Supported)\]?$/i
+
 export function cpuPercent(prev: CpuTimes | null, next: CpuTimes | null): number | null {
   if (!prev || !next) return null
   const dTotal = next.total - prev.total
@@ -47,19 +50,33 @@ export function parseSwap(meminfo: string): SwapStats | null {
   return { percent: (used / total) * 100, usedGiB: used / KIB_PER_GIB, totalGiB: total / KIB_PER_GIB }
 }
 
+/** Numeric field or `"na"` when nvidia-smi reports `[N/A]` / `[Not Supported]`; `"bad"` on arbitrary garbage. */
+function smiNumber(raw: string): number | "na" | "bad" {
+  if (SMI_NA.test(raw)) return "na"
+  const n = Number(raw)
+  return raw !== "" && Number.isFinite(n) && n >= 0 ? n : "bad"
+}
+
 /** Parses the first GPU line of `--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu,name`. */
 export function parseNvidiaSmi(stdout: string): GpuStats | null {
   const fields = stdout.trim().split("\n")[0]?.split(",").map((s) => s.trim())
   if (!fields || fields.length < 5) return null
-  const [util, used, total, temp] = fields.slice(0, 4).map(Number) as [number, number, number, number]
-  if (![util, used, total].every(Number.isFinite)) return null
+  const [utilRaw, usedRaw, totalRaw, tempRaw] = fields as [string, string, string, string]
+  const util = smiNumber(utilRaw)
+  const used = smiNumber(usedRaw)
+  const total = smiNumber(totalRaw)
+  const temp = Number(tempRaw)
+  if (util === "bad" || used === "bad" || total === "bad") return null
+  const hasVram = typeof used === "number" && typeof total === "number"
+  if (util === "na" && !hasVram) return null
+  const clampedUsed = hasVram ? Math.min(used, total) : 0
   return {
     name: fields.slice(4).join(","),
-    util,
-    temp: Number.isFinite(temp) ? temp : null,
-    vramPercent: total > 0 ? (used / total) * 100 : 0,
-    vramUsedGiB: used / MIB_PER_GIB,
-    vramTotalGiB: total / MIB_PER_GIB,
+    util: typeof util === "number" ? clampPct(util) : null,
+    temp: tempRaw !== "" && Number.isFinite(temp) ? temp : null,
+    vramPercent: hasVram ? (total > 0 ? clampPct((clampedUsed / total) * 100) : 0) : null,
+    vramUsedGiB: hasVram ? clampedUsed / MIB_PER_GIB : null,
+    vramTotalGiB: hasVram ? total / MIB_PER_GIB : null,
   }
 }
 

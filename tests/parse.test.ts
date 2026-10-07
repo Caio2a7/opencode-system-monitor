@@ -107,7 +107,38 @@ describe("parseNvidiaSmi", () => {
     ["whitespace", "  \n"],
     ["too few fields", "89, 4746"],
     ["non numeric util", "abc, 4746, 8188, 62, GPU"],
+    ["all metrics N/A", "[N/A], [N/A], [N/A], [N/A], GPU"],
   ])("returns null for %s", (_n, input) => expect(parseNvidiaSmi(input)).toBeNull())
+
+  test("keeps VRAM and temp when utilization.gpu is [N/A] or [Not Supported]", () => {
+    const gpu = parseNvidiaSmi("[N/A], 2048, 8192, 58, NVIDIA GeForce")!
+    expect(gpu.util).toBeNull()
+    expect(gpu.vramPercent).toBeCloseTo(25, 10)
+    expect(gpu.vramUsedGiB).toBeCloseTo(2, 10)
+    expect(gpu.vramTotalGiB).toBeCloseTo(8, 10)
+    expect(gpu.temp).toBe(58)
+
+    const unsupported = parseNvidiaSmi("[Not Supported], 1024, 4096, [N/A], NVIDIA vGPU")!
+    expect(unsupported.util).toBeNull()
+    expect(unsupported.vramPercent).toBeCloseTo(25, 10)
+    expect(unsupported.temp).toBeNull()
+  })
+
+  test("keeps utilization when VRAM is [N/A] (unified-memory GPUs)", () => {
+    const gpu = parseNvidiaSmi("42, [N/A], [N/A], 51, NVIDIA Tegra")!
+    expect(gpu.util).toBe(42)
+    expect(gpu.vramPercent).toBeNull()
+    expect(gpu.vramUsedGiB).toBeNull()
+    expect(gpu.vramTotalGiB).toBeNull()
+    expect(gpu.temp).toBe(51)
+  })
+
+  test("clamps util and vramPercent to 100%", () => {
+    const gpu = parseNvidiaSmi("120, 9000, 8192, 70, GPU")!
+    expect(gpu.util).toBe(100)
+    expect(gpu.vramPercent).toBe(100)
+    expect(gpu.vramUsedGiB).toBeCloseTo(8, 10)
+  })
 
   test("zero total VRAM yields 0% instead of NaN", () => {
     expect(parseNvidiaSmi("5, 0, 0, 40, GPU")?.vramPercent).toBe(0)

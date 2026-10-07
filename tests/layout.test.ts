@@ -111,6 +111,23 @@ describe("gridRows degraded inputs", () => {
     }
   })
 
+  test("gpu with partial [N/A] metrics shows em dash only on the null cell", () => {
+    const rows = gridRows(
+      c,
+      withGpu({
+        name: "RTX",
+        util: null,
+        temp: 55,
+        vramPercent: 50,
+        vramUsedGiB: 4,
+        vramTotalGiB: 8,
+      }),
+    )
+    expect(flat(rows[1]![0]!.label)).toBe("GPU     —")
+    expect(flat(rows[1]![0]!.bar)).toBe("─────────")
+    expect(flat(rows[1]![1]!.label)).toBe("VRAM  50%")
+  })
+
   test("null cpu and swap show dashes with an empty bar", () => {
     const rows = gridRows(c, { ...fullStats, cpu: null, swap: null })
     const cpu = rows[0]![0]!

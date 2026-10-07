@@ -34,11 +34,11 @@ export interface DiskStats {
   percent: number
 }
 export interface GpuStats {
-  util: number
+  util: number | null
   temp: number | null
-  vramPercent: number
-  vramUsedGiB: number
-  vramTotalGiB: number
+  vramPercent: number | null
+  vramUsedGiB: number | null
+  vramTotalGiB: number | null
   name: string
 }
 /** `null` means nvidia-smi is not installed. */
