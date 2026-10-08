@@ -70,9 +70,10 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
 
   const cpu = async (): Promise<CpuStats | null> => {
     const next = await source.cpuTimes()
+    if (!next) return null
     const prev = prevCpu
     prevCpu = next
-    return next ? { percent: cpuPercent(prev, next) } : null
+    return { percent: cpuPercent(prev, next) }
   }
   const disk = async (): Promise<DiskStats | null> => {
     const percent = diskPercent(await deps.statfs(diskRoot(deps.platform, deps.env)))

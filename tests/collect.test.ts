@@ -113,4 +113,14 @@ describe("createCollector", () => {
     b.files["/proc/stat"] = PROC_STAT_B
     expect((await cb.collect()).cpu?.percent ?? null).toBeNull()
   })
+
+  test("transient /proc/stat failure preserves prevCpu so the next valid read still computes a delta", async () => {
+    const { deps, files } = fakeDeps()
+    const c = createCollector(deps)
+    expect((await c.collect()).cpu?.percent).toBeNull()
+    files["/proc/stat"] = "corrupt"
+    expect((await c.collect()).cpu).toBeNull()
+    files["/proc/stat"] = PROC_STAT_B
+    expect((await c.collect()).cpu?.percent).toBeCloseTo(50, 10)
+  })
 })
