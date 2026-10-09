@@ -23,8 +23,9 @@ const SMI_NA = /^\[?(?:N\/A|Not Supported)\]?$/i
 export function cpuPercent(prev: CpuTimes | null, next: CpuTimes | null): number | null {
   if (!prev || !next) return null
   const dTotal = next.total - prev.total
-  if (dTotal <= 0) return null
-  return (1 - (next.idle - prev.idle) / dTotal) * 100
+  const dIdle = next.idle - prev.idle
+  if (dTotal <= 0 || dIdle < 0) return null
+  return clampPct((1 - dIdle / dTotal) * 100)
 }
 
 function meminfoKib(text: string, key: string): number | null {

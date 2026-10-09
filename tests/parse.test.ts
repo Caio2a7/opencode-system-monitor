@@ -45,6 +45,11 @@ describe("cpuPercent", () => {
     expect(cpuPercent({ idle: 0, total: 1 }, { idle: 100, total: 101 })).toBeCloseTo(0, 10)
     expect(cpuPercent({ idle: 5, total: 10 }, { idle: 5, total: 110 })).toBeCloseTo(100, 10)
   })
+
+  test("null when idle counter went backwards; clamps to 0% if dIdle > dTotal", () => {
+    expect(cpuPercent({ idle: 50, total: 100 }, { idle: 40, total: 200 })).toBeNull()
+    expect(cpuPercent({ idle: 10, total: 100 }, { idle: 120, total: 150 })).toBe(0)
+  })
 })
 
 describe("parseMeminfo", () => {
