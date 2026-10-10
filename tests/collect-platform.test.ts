@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test"
 import { createCollector, type CollectorDeps } from "../src/stats/collect"
 import { WIN_PAGEFILE_SCRIPT } from "../src/stats/parse-os"
+import { createSmiRunner, smiCandidates } from "../src/stats/smi"
 import { PAGEFILE_OUT, SMI_LINE, SWAPUSAGE_M, VM_STAT } from "./fixtures"
 
 const GiB = 1024 ** 3
 type Times = { user: number; nice: number; sys: number; idle: number; irq: number }
+const enoent = () => Object.assign(new Error("ENOENT"), { code: "ENOENT" })
 
 function setup(platform: string, over: Partial<CollectorDeps> = {}) {
   const state = { times: { user: 100, nice: 0, sys: 50, idle: 800, irq: 50 } as Times, now: 1_000_000 }
@@ -135,6 +137,33 @@ describe("win32", () => {
     await createCollector(deps).collect()
     await createCollector(deps).collect()
     expect(ps(calls)).toHaveLength(2)
+  })
+})
+
+describe("smiCandidates & createSmiRunner", () => {
+  test("includes Windows NVSMI/System32 and Linux WSL2 fallback paths", () => {
+    expect(smiCandidates("win32", { SystemRoot: "C:\\Windows", ProgramFiles: "C:\\Program Files" })).toEqual([
+      "nvidia-smi",
+      "C:\\Windows\\System32\\nvidia-smi.exe",
+      "C:\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe",
+    ])
+    expect(smiCandidates("linux", {})).toEqual(["nvidia-smi", "/usr/lib/wsl/lib/nvidia-smi"])
+  })
+
+  test("probes fallback paths on ENOENT and caches the working binary", async () => {
+    const tried: string[] = []
+    const runner = createSmiRunner(
+      async (file) => {
+        tried.push(file)
+        if (file === "nvidia-smi") throw enoent()
+        return SMI_LINE
+      },
+      "linux",
+      {},
+    )
+    expect(await runner()).toBe(SMI_LINE)
+    expect(await runner()).toBe(SMI_LINE)
+    expect(tried).toEqual(["nvidia-smi", "/usr/lib/wsl/lib/nvidia-smi", "/usr/lib/wsl/lib/nvidia-smi"])
   })
 })
 
