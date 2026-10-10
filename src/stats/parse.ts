@@ -33,12 +33,12 @@ function meminfoKib(text: string, key: string): number | null {
   return match?.[1] === undefined ? null : Number(match[1])
 }
 
-/** used = MemTotal - MemAvailable. */
+/** used = MemTotal - MemAvailable, clamped to [0, MemTotal]. */
 export function parseMeminfo(meminfo: string): RamStats | null {
   const total = meminfoKib(meminfo, "MemTotal")
   const available = meminfoKib(meminfo, "MemAvailable")
   if (total === null || available === null || total <= 0) return null
-  const used = total - available
+  const used = Math.min(total, Math.max(0, total - available))
   return { percent: (used / total) * 100, usedGiB: used / KIB_PER_GIB, totalGiB: total / KIB_PER_GIB }
 }
 
@@ -47,7 +47,7 @@ export function parseSwap(meminfo: string): SwapStats | null {
   const total = meminfoKib(meminfo, "SwapTotal")
   const free = meminfoKib(meminfo, "SwapFree")
   if (total === null || free === null || total <= 0) return null
-  const used = Math.max(0, total - free)
+  const used = Math.min(total, Math.max(0, total - free))
   return { percent: (used / total) * 100, usedGiB: used / KIB_PER_GIB, totalGiB: total / KIB_PER_GIB }
 }
 
@@ -83,7 +83,8 @@ export function parseNvidiaSmi(stdout: string): GpuStats | null {
 
 /** Same formula as `df`: used / (used + available to unprivileged users). */
 export function diskPercent(fs: { blocks: number; bfree: number; bavail: number }): number | null {
-  const used = fs.blocks - fs.bfree
+  if (![fs.blocks, fs.bfree, fs.bavail].every(Number.isFinite) || fs.blocks <= 0 || fs.bavail < 0) return null
+  const used = Math.max(0, fs.blocks - fs.bfree)
   const denom = used + fs.bavail
-  return denom > 0 ? (used / denom) * 100 : null
+  return denom > 0 ? clampPct((used / denom) * 100) : null
 }

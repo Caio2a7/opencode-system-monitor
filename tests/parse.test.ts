@@ -60,6 +60,12 @@ describe("parseMeminfo", () => {
     expect(ram.usedGiB).toBeCloseTo(8192000 / 1048576, 10)
   })
 
+  test("clamps used to 0 when MemAvailable exceeds MemTotal", () => {
+    const ram = parseMeminfo("MemTotal: 1000 kB\nMemAvailable: 2000 kB\n")!
+    expect(ram.percent).toBe(0)
+    expect(ram.usedGiB).toBe(0)
+  })
+
   test.each([
     ["empty", ""],
     ["missing MemAvailable", "MemTotal: 100 kB\nMemFree: 5 kB\n"],
@@ -155,8 +161,12 @@ describe("diskPercent", () => {
     expect(diskPercent({ blocks: 1000, bfree: 400, bavail: 300 })).toBeCloseTo((600 / 900) * 100, 10)
   })
 
-  test("null for empty filesystem", () => {
+  test("null for empty or invalid filesystem stats, clamps when bfree > blocks", () => {
     expect(diskPercent({ blocks: 0, bfree: 0, bavail: 0 })).toBeNull()
+    expect(diskPercent({ blocks: -10, bfree: 0, bavail: 10 })).toBeNull()
+    expect(diskPercent({ blocks: 100, bfree: 50, bavail: -1 })).toBeNull()
+    expect(diskPercent({ blocks: Number.NaN, bfree: 0, bavail: 10 })).toBeNull()
+    expect(diskPercent({ blocks: 100, bfree: 150, bavail: 50 })).toBe(0)
   })
 })
 
