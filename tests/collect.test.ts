@@ -123,4 +123,19 @@ describe("createCollector", () => {
     files["/proc/stat"] = PROC_STAT_B
     expect((await c.collect()).cpu?.percent).toBeCloseTo(50, 10)
   })
+
+  test("nvidia-smi ENOENT is cached so subsequent collects do not re-spawn nvidia-smi", async () => {
+    let smiCalls = 0
+    const { deps } = fakeDeps({
+      runSmi: async () => {
+        smiCalls++
+        throw errno("ENOENT")
+      },
+    })
+    const c = createCollector(deps)
+    expect((await c.collect()).gpu).toBeNull()
+    expect((await c.collect()).gpu).toBeNull()
+    expect((await c.collect()).gpu).toBeNull()
+    expect(smiCalls).toBe(1)
+  })
 })

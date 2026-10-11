@@ -5,7 +5,7 @@ import { cpuPercent, diskPercent, parseNvidiaSmi } from "./parse"
 import type { CpuTimes } from "./parse"
 import { diskRoot } from "./parse-os"
 import { runCommand } from "./run"
-import { runNvidiaSmi } from "./smi"
+import { createSmiRunner, runNvidiaSmi } from "./smi"
 import { darwinSource } from "./sources/darwin"
 import { genericSource } from "./sources/generic"
 import { linuxSource } from "./sources/linux"
@@ -53,20 +53,18 @@ function sourceFor(deps: CollectorDeps): StatsSource {
   }
 }
 
-async function collectGpu(deps: CollectorDeps, signal?: AbortSignal): Promise<GpuResult> {
-  try {
-    const gpu = parseNvidiaSmi(await deps.runSmi(signal))
-    return gpu ?? { error: "unexpected nvidia-smi output" }
-  } catch (err) {
-    return hasCode(err, "ENOENT") ? null : { error: messageOf(err) }
-  }
-}
-
-/** Creates a stats collector; CPU deltas are kept inside the instance. */
+/** Creates a stats collector; CPU deltas and GPU discovery state are kept inside the instance. */
 export function createCollector(overrides: Partial<CollectorDeps> = {}): { collect(signal?: AbortSignal): Promise<SystemStats> } {
-  const deps: CollectorDeps = { ...defaultDeps, ...overrides }
+  const platform = overrides.platform ?? defaultDeps.platform
+  const env = overrides.env ?? defaultDeps.env
+  const deps: CollectorDeps = {
+    ...defaultDeps,
+    runSmi: createSmiRunner(undefined, platform, env),
+    ...overrides,
+  }
   const source = sourceFor(deps)
   let prevCpu: CpuTimes | null = null
+  let smiAbsent = false
 
   const cpu = async (): Promise<CpuStats | null> => {
     const next = await source.cpuTimes()
@@ -79,8 +77,19 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
     const percent = diskPercent(await deps.statfs(diskRoot(deps.platform, deps.env)))
     return percent === null ? null : { percent }
   }
-  const gpu = (signal?: AbortSignal): Promise<GpuResult> =>
-    source.hasGpu ? collectGpu(deps, signal) : Promise.resolve(null)
+  const gpu = async (signal?: AbortSignal): Promise<GpuResult> => {
+    if (!source.hasGpu) return null
+    if (!smiAbsent) {
+      try {
+        const parsed = parseNvidiaSmi(await deps.runSmi(signal))
+        return parsed ?? { error: "unexpected nvidia-smi output" }
+      } catch (err) {
+        if (!hasCode(err, "ENOENT")) return { error: messageOf(err) }
+        smiAbsent = true
+      }
+    }
+    return null
+  }
 
   return {
     async collect(signal) {
