@@ -123,6 +123,23 @@ describe("win32", () => {
     expect(ps(calls)).toHaveLength(2)
   })
 
+  test("falls back to pwsh.exe when powershell.exe throws ENOENT and caches pwsh.exe", async () => {
+    const { deps, state, calls } = setup("win32")
+    deps.run = async (f, a) => {
+      calls.run.push([f, a])
+      if (f === "powershell.exe") throw enoent()
+      if (f === "pwsh.exe") return PAGEFILE_OUT
+      throw new Error(`unexpected ${f}`)
+    }
+    const c = createCollector(deps)
+    expect((await c.collect()).swap?.percent).toBeCloseTo(25, 10)
+    expect(calls.run.map(([f]) => f)).toEqual(["powershell.exe", "pwsh.exe"])
+
+    state.now += 30_000
+    await c.collect()
+    expect(calls.run.map(([f]) => f)).toEqual(["powershell.exe", "pwsh.exe", "pwsh.exe"])
+  })
+
   test("disk root follows SystemDrive", async () => {
     const a = setup("win32")
     await createCollector(a.deps).collect()
