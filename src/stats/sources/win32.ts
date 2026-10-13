@@ -12,6 +12,7 @@ const isEnoent = (err: unknown): boolean =>
 export function win32Source(deps: CollectorDeps): StatsSource {
   let cached: SwapStats | null = null
   let nextRefresh = 0
+  let inflight: Promise<SwapStats | null> | null = null
   let resolvedShell: string | null = null
 
   const queryPageFile = async (signal?: AbortSignal): Promise<SwapStats | null> => {
@@ -31,13 +32,19 @@ export function win32Source(deps: CollectorDeps): StatsSource {
     return null
   }
 
-  /** PowerShell is slow: refresh at most every 30 s, failures keep null until the next refresh. */
+  /** PowerShell is slow: refresh at most every 30 s; serve cached value while refreshing in background. */
   const swap = async (signal?: AbortSignal): Promise<SwapStats | null> => {
     const now = deps.now()
-    if (now < nextRefresh) return cached
-    nextRefresh = now + SWAP_REFRESH_MS
-    cached = await queryPageFile(signal)
-    return cached
+    if (now < nextRefresh) return inflight !== null && cached === null ? inflight : cached
+    if (inflight === null) {
+      nextRefresh = now + SWAP_REFRESH_MS
+      inflight = queryPageFile(signal).then((res) => {
+        cached = res
+        inflight = null
+        return res
+      })
+    }
+    return cached !== null ? cached : inflight
   }
   return {
     hasGpu: true,

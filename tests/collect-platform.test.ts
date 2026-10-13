@@ -140,6 +140,31 @@ describe("win32", () => {
     expect(calls.run.map(([f]) => f)).toEqual(["powershell.exe", "pwsh.exe", "pwsh.exe"])
   })
 
+  test("serves stale swap immediately without blocking while background refresh is inflight", async () => {
+    const { deps, state } = setup("win32")
+    let resolveSlow!: (v: string) => void
+    let callCount = 0
+    deps.run = async () => {
+      callCount++
+      if (callCount === 1) return PAGEFILE_OUT
+      return new Promise<string>((r) => {
+        resolveSlow = r
+      })
+    }
+    const c = createCollector(deps)
+    expect((await c.collect()).swap?.percent).toBeCloseTo(25, 10)
+
+    state.now += 30_000
+    // Should resolve immediately with stale 25% even though 2nd powershell call has not resolved yet
+    const stale = await c.collect()
+    expect(stale.swap?.percent).toBeCloseTo(25, 10)
+    expect(callCount).toBe(2)
+
+    resolveSlow("4096 2048\r\n")
+    await new Promise((r) => setTimeout(r, 0))
+    expect((await c.collect()).swap?.percent).toBeCloseTo(50, 10)
+  })
+
   test("disk root follows SystemDrive", async () => {
     const a = setup("win32")
     await createCollector(a.deps).collect()
