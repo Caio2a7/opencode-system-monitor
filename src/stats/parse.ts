@@ -1,5 +1,6 @@
 import type { GpuStats, RamStats, SwapStats } from "../types"
 
+const BYTES_PER_GIB = 1024 ** 3
 const KIB_PER_GIB = 1024 * 1024
 const MIB_PER_GIB = 1024
 
@@ -40,6 +41,20 @@ export function parseMeminfo(meminfo: string): RamStats | null {
   if (total === null || available === null || total <= 0) return null
   const used = Math.min(total, Math.max(0, total - available))
   return { percent: (used / total) * 100, usedGiB: used / KIB_PER_GIB, totalGiB: total / KIB_PER_GIB }
+}
+
+/** Parses Linux cgroup v2 `memory.max` and `memory.current` when a container limit (< host RAM) is active. */
+export function parseCgroupMemory(maxRaw: string, currentRaw: string, hostTotalGiB?: number): RamStats | null {
+  const maxTrim = maxRaw.trim()
+  const curTrim = currentRaw.trim()
+  if (maxTrim === "" || maxTrim === "max" || curTrim === "") return null
+  const limit = Number(maxTrim)
+  const current = Number(curTrim)
+  if (!Number.isFinite(limit) || !Number.isFinite(current) || limit <= 0 || current < 0) return null
+  const totalGiB = limit / BYTES_PER_GIB
+  if (hostTotalGiB !== undefined && totalGiB >= hostTotalGiB) return null
+  const used = Math.min(limit, current)
+  return { percent: clampPct((used / limit) * 100), usedGiB: used / BYTES_PER_GIB, totalGiB }
 }
 
 /** used = SwapTotal - SwapFree; null when swap is absent (SwapTotal 0 or missing). */

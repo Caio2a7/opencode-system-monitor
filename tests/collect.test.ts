@@ -138,4 +138,36 @@ describe("createCollector", () => {
     expect((await c.collect()).gpu).toBeNull()
     expect(smiCalls).toBe(1)
   })
+
+  test("uses Linux cgroup v2 memory limit when smaller than host RAM and caches absence when unlimited", async () => {
+    const GiB = 1024 ** 3
+    const { deps, files } = fakeDeps({
+      files: {
+        "/sys/fs/cgroup/memory.max": `${4 * GiB}\n`,
+        "/sys/fs/cgroup/memory.current": `${GiB}\n`,
+      },
+    })
+    const c = createCollector(deps)
+    const s = await c.collect()
+    expect(s.ram).toEqual({ percent: 25, usedGiB: 1, totalGiB: 4 })
+    files["/sys/fs/cgroup/memory.current"] = `${2 * GiB}\n`
+    expect((await c.collect()).ram?.percent).toBe(50)
+
+    let cgroupReads = 0
+    const unlimited = fakeDeps({
+      files: {
+        "/sys/fs/cgroup/memory.max": "max\n",
+        "/sys/fs/cgroup/memory.current": `${GiB}\n`,
+      },
+    })
+    const origRead = unlimited.deps.readText
+    unlimited.deps.readText = async (p) => {
+      if (p.startsWith("/sys/fs/cgroup/")) cgroupReads++
+      return origRead(p)
+    }
+    const cu = createCollector(unlimited.deps)
+    expect((await cu.collect()).ram?.percent).toBeCloseTo(50, 10)
+    expect((await cu.collect()).ram?.percent).toBeCloseTo(50, 10)
+    expect(cgroupReads).toBe(2) // Only read once on first tick
+  })
 })

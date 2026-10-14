@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 import {
   cpuPercent,
   diskPercent,
+  parseCgroupMemory,
   parseCpuTimes,
   parseMeminfo,
   parseNvidiaSmi,
@@ -10,6 +11,7 @@ import {
 import { MEMINFO, PROC_STAT_A, PROC_STAT_B, SMI_LINE } from "./fixtures"
 
 const MiB = 1_048_576
+const GiB = 1024 ** 3
 
 describe("parseCpuTimes", () => {
   test("sums all fields and counts idle + iowait as idle", () => {
@@ -75,6 +77,26 @@ describe("parseMeminfo", () => {
 
   test("returns null when MemTotal is zero (no divide-by-zero)", () => {
     expect(parseMeminfo("MemTotal: 0 kB\nMemAvailable: 0 kB\n")).toBeNull()
+  })
+})
+
+describe("parseCgroupMemory", () => {
+  test("parses container memory limit and current usage in bytes", () => {
+    const ram = parseCgroupMemory(`${4 * GiB}\n`, `${GiB}\n`, 16)!
+    expect(ram).toEqual({ percent: 25, usedGiB: 1, totalGiB: 4 })
+  })
+
+  test("returns null when memory.max is 'max' or >= host total", () => {
+    expect(parseCgroupMemory("max\n", `${GiB}\n`, 16)).toBeNull()
+    expect(parseCgroupMemory(`${32 * GiB}\n`, `${GiB}\n`, 16)).toBeNull()
+    expect(parseCgroupMemory("", `${GiB}\n`)).toBeNull()
+    expect(parseCgroupMemory("0", `${GiB}\n`)).toBeNull()
+    expect(parseCgroupMemory(`${4 * GiB}`, "invalid")).toBeNull()
+  })
+
+  test("clamps current usage to limit", () => {
+    const ram = parseCgroupMemory(`${2 * GiB}\n`, `${3 * GiB}\n`, 16)!
+    expect(ram).toEqual({ percent: 100, usedGiB: 2, totalGiB: 2 })
   })
 })
 
