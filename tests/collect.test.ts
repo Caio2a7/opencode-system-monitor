@@ -139,6 +139,38 @@ describe("createCollector", () => {
     expect(smiCalls).toBe(1)
   })
 
+  test("falls back to Linux AMD GPU sysfs when nvidia-smi throws ENOENT and caches discovered card", async () => {
+    let smiCalls = 0
+    const GiB = 1024 ** 3
+    const { deps, files } = fakeDeps({
+      runSmi: async () => {
+        smiCalls++
+        throw errno("ENOENT")
+      },
+      files: {
+        "/sys/class/drm/card1/device/gpu_busy_percent": "64\n",
+        "/sys/class/drm/card1/device/mem_info_vram_used": `${3 * GiB}\n`,
+        "/sys/class/drm/card1/device/mem_info_vram_total": `${12 * GiB}\n`,
+        "/sys/class/drm/card1/device/hwmon/hwmon0/temp1_input": "61000\n",
+        "/sys/class/drm/card1/device/product_name": "AMD Radeon RX 7700 XT\n",
+      },
+    })
+    const c = createCollector(deps)
+    const first = await c.collect()
+    expect(first.gpu).toEqual({
+      name: "AMD Radeon RX 7700 XT",
+      util: 64,
+      temp: 61,
+      vramPercent: 25,
+      vramUsedGiB: 3,
+      vramTotalGiB: 12,
+    })
+    files["/sys/class/drm/card1/device/gpu_busy_percent"] = "80\n"
+    const second = await c.collect()
+    expect(second.gpu && "util" in second.gpu ? second.gpu.util : null).toBe(80)
+    expect(smiCalls).toBe(1)
+  })
+
   test("uses Linux cgroup v2 memory limit when smaller than host RAM and caches absence when unlimited", async () => {
     const GiB = 1024 ** 3
     const { deps, files } = fakeDeps({

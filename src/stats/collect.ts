@@ -88,7 +88,7 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
         smiAbsent = true
       }
     }
-    return null
+    return (await source.fallbackGpu?.()) ?? null
   }
 
   return {

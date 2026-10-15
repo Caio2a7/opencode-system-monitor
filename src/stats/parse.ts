@@ -96,6 +96,39 @@ export function parseNvidiaSmi(stdout: string): GpuStats | null {
   }
 }
 
+function sysfsNumber(raw: string | null): number | null | "bad" {
+  if (raw === null) return null
+  const trimmed = raw.trim()
+  const n = Number(trimmed)
+  return trimmed !== "" && Number.isFinite(n) && n >= 0 ? n : "bad"
+}
+
+/** Parses Linux DRM/amdgpu sysfs files (`gpu_busy_percent`, `mem_info_vram_used`, `mem_info_vram_total`, `temp1_input`). */
+export function parseAmdGpu(
+  busyRaw: string | null,
+  vramUsedRaw: string | null,
+  vramTotalRaw: string | null,
+  tempRaw: string | null = null,
+  name = "AMD GPU",
+): GpuStats | null {
+  const util = sysfsNumber(busyRaw)
+  const used = sysfsNumber(vramUsedRaw)
+  const total = sysfsNumber(vramTotalRaw)
+  if (util === "bad" || used === "bad" || total === "bad") return null
+  const hasVram = typeof used === "number" && typeof total === "number"
+  if (util === null && !hasVram) return null
+  const clampedUsed = hasVram ? Math.min(used, total) : 0
+  const tempMilli = sysfsNumber(tempRaw)
+  return {
+    name: name.trim() || "AMD GPU",
+    util: typeof util === "number" ? clampPct(util) : null,
+    temp: typeof tempMilli === "number" ? tempMilli / 1000 : null,
+    vramPercent: hasVram ? (total > 0 ? clampPct((clampedUsed / total) * 100) : 0) : null,
+    vramUsedGiB: hasVram ? clampedUsed / BYTES_PER_GIB : null,
+    vramTotalGiB: hasVram ? total / BYTES_PER_GIB : null,
+  }
+}
+
 /** Same formula as `df`: used / (used + available to unprivileged users). */
 export function diskPercent(fs: { blocks: number; bfree: number; bavail: number }): number | null {
   if (![fs.blocks, fs.bfree, fs.bavail].every(Number.isFinite) || fs.blocks <= 0 || fs.bavail < 0) return null

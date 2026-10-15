@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 import {
   cpuPercent,
   diskPercent,
+  parseAmdGpu,
   parseCgroupMemory,
   parseCpuTimes,
   parseMeminfo,
@@ -175,6 +176,30 @@ describe("parseNvidiaSmi", () => {
 
   test("zero total VRAM yields 0% instead of NaN", () => {
     expect(parseNvidiaSmi("5, 0, 0, 40, GPU")?.vramPercent).toBe(0)
+  })
+})
+
+describe("parseAmdGpu", () => {
+  test("parses sysfs utilization, VRAM bytes, and millidegree temperature", () => {
+    const gpu = parseAmdGpu("75\n", `${2 * GiB}\n`, `${8 * GiB}\n`, "54000\n", "AMD Radeon RX 7800 XT\n")!
+    expect(gpu).toEqual({
+      name: "AMD Radeon RX 7800 XT",
+      util: 75,
+      temp: 54,
+      vramPercent: 25,
+      vramUsedGiB: 2,
+      vramTotalGiB: 8,
+    })
+  })
+
+  test("supports partial metrics and returns null on invalid or empty inputs", () => {
+    const busyOnly = parseAmdGpu("40\n", null, null, null)!
+    expect(busyOnly.util).toBe(40)
+    expect(busyOnly.vramPercent).toBeNull()
+    expect(busyOnly.temp).toBeNull()
+
+    expect(parseAmdGpu(null, null, null)).toBeNull()
+    expect(parseAmdGpu("abc", `${GiB}`, `${2 * GiB}`)).toBeNull()
   })
 })
 

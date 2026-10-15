@@ -1,4 +1,4 @@
-import type { RamStats, SwapStats } from "../../types"
+import type { GpuStats, RamStats, SwapStats } from "../../types"
 import type { CpuTimes } from "../parse"
 
 export interface CollectorDeps {
@@ -23,6 +23,8 @@ export interface MemoryStats {
 export interface StatsSource {
   cpuTimes(): Promise<CpuTimes | null>
   memory(signal?: AbortSignal): Promise<MemoryStats>
-  /** false when the platform never has an NVIDIA GPU, so nvidia-smi is not spawned. */
+  /** Optional platform-native GPU reader used when nvidia-smi is not installed. */
+  fallbackGpu?(): Promise<GpuStats | null>
+  /** false when the platform never has a supported GPU source, so GPU collection is skipped. */
   readonly hasGpu: boolean
 }
