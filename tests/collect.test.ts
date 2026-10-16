@@ -222,4 +222,38 @@ describe("createCollector", () => {
     expect((await c.collect()).disk?.percent).toBeCloseTo((600 / 900) * 100, 10)
     expect(statfsCalls).toBe(2)
   })
+
+  test("serves cached GPU within fast budget when nvidia-smi is slow and deduplicates inflight calls", async () => {
+    let smiCalls = 0
+    let resolveSlow!: (v: string) => void
+    const { deps, files } = fakeDeps({
+      runSmi: async () => {
+        smiCalls++
+        if (smiCalls === 1) return SMI_LINE
+        return new Promise<string>((r) => {
+          resolveSlow = r
+        })
+      },
+    })
+    const c = createCollector(deps)
+    const first = await c.collect()
+    expect(first.gpu && "util" in first.gpu ? first.gpu.util : null).toBe(89)
+
+    files["/proc/stat"] = PROC_STAT_B
+    const start = Date.now()
+    const second = await c.collect()
+    // Should resolve after ~250ms fast budget with CPU updated and stale GPU (89%), without waiting forever
+    expect(Date.now() - start).toBeLessThan(1000)
+    expect(second.cpu?.percent).toBeCloseTo(50, 10)
+    expect(second.gpu && "util" in second.gpu ? second.gpu.util : null).toBe(89)
+
+    // Another collect while still inflight must not spawn a 3rd nvidia-smi
+    await c.collect()
+    expect(smiCalls).toBe(2)
+
+    resolveSlow("42, 2048, 8192, 55, RTX\n")
+    await new Promise((r) => setTimeout(r, 0))
+    const fourth = await c.collect()
+    expect(fourth.gpu && "util" in fourth.gpu ? fourth.gpu.util : null).toBe(42)
+  })
 })

@@ -17,6 +17,7 @@ export type { CollectorDeps } from "./sources/types"
 const RUN_TIMEOUT_MS = 3000
 const RUN_MAX_BYTES = 64 * 1024
 const DISK_REFRESH_MS = 10_000
+const GPU_FAST_BUDGET_MS = 250
 
 const defaultDeps: CollectorDeps = {
   readText: (path) => readFile(path, "utf8"),
@@ -54,6 +55,24 @@ function sourceFor(deps: CollectorDeps): StatsSource {
   }
 }
 
+/** Races `task` against `budgetMs`, returning `fallback` if `task` is still pending after the budget. */
+function withFastBudget<T>(task: Promise<T>, budgetMs: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(fallback), budgetMs)
+    timer.unref?.()
+    task.then(
+      (val) => {
+        clearTimeout(timer)
+        resolve(val)
+      },
+      () => {
+        clearTimeout(timer)
+        resolve(fallback)
+      },
+    )
+  })
+}
+
 /** Creates a stats collector; CPU deltas and GPU discovery state are kept inside the instance. */
 export function createCollector(overrides: Partial<CollectorDeps> = {}): { collect(signal?: AbortSignal): Promise<SystemStats> } {
   const platform = overrides.platform ?? defaultDeps.platform
@@ -68,6 +87,8 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
   let smiAbsent = false
   let cachedDisk: DiskStats | null = null
   let nextDiskRefresh = 0
+  let lastGpu: GpuResult | undefined
+  let gpuInflight: Promise<GpuResult> | null = null
 
   const cpu = async (): Promise<CpuStats | null> => {
     const next = await source.cpuTimes()
@@ -84,8 +105,7 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
     if (cachedDisk !== null) nextDiskRefresh = now + DISK_REFRESH_MS
     return cachedDisk
   }
-  const gpu = async (signal?: AbortSignal): Promise<GpuResult> => {
-    if (!source.hasGpu) return null
+  const fetchGpu = async (signal?: AbortSignal): Promise<GpuResult> => {
     if (!smiAbsent) {
       try {
         const parsed = parseNvidiaSmi(await deps.runSmi(signal))
@@ -96,6 +116,17 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
       }
     }
     return (await source.fallbackGpu?.()) ?? null
+  }
+  const gpu = async (signal?: AbortSignal): Promise<GpuResult> => {
+    if (!source.hasGpu) return null
+    if (gpuInflight === null) {
+      gpuInflight = fetchGpu(signal).then((res) => {
+        lastGpu = res
+        gpuInflight = null
+        return res
+      })
+    }
+    return lastGpu !== undefined ? withFastBudget(gpuInflight, GPU_FAST_BUDGET_MS, lastGpu) : gpuInflight
   }
 
   return {
