@@ -81,6 +81,19 @@ describe("darwin", () => {
     const s = await createCollector(deps).collect()
     expect([s.cpu, s.ram, s.swap, s.disk, s.gpu]).toEqual([null, null, null, null, null])
   })
+
+  test("caches sysctl swap usage for 10 s while refreshing vm_stat every tick", async () => {
+    const { deps, state, calls } = setup("darwin")
+    const c = createCollector(deps)
+    await c.collect()
+    state.now += 9_999
+    await c.collect()
+    expect(calls.run.filter(([f]) => f === "vm_stat")).toHaveLength(2)
+    expect(calls.run.filter(([f]) => f === "sysctl")).toHaveLength(1)
+    state.now += 1
+    await c.collect()
+    expect(calls.run.filter(([f]) => f === "sysctl")).toHaveLength(2)
+  })
 })
 
 describe("win32", () => {
