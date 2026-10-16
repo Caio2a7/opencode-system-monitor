@@ -202,4 +202,24 @@ describe("createCollector", () => {
     expect((await cu.collect()).ram?.percent).toBeCloseTo(50, 10)
     expect(cgroupReads).toBe(2) // Only read once on first tick
   })
+
+  test("caches statfs disk usage for 10 s and refreshes afterwards", async () => {
+    let now = 1_000
+    let statfsCalls = 0
+    const { deps } = fakeDeps({
+      now: () => now,
+      statfs: async () => {
+        statfsCalls++
+        return { blocks: 1000, bfree: 400, bavail: 300 }
+      },
+    })
+    const c = createCollector(deps)
+    expect((await c.collect()).disk?.percent).toBeCloseTo((600 / 900) * 100, 10)
+    now += 9_999
+    expect((await c.collect()).disk?.percent).toBeCloseTo((600 / 900) * 100, 10)
+    expect(statfsCalls).toBe(1)
+    now += 1
+    expect((await c.collect()).disk?.percent).toBeCloseTo((600 / 900) * 100, 10)
+    expect(statfsCalls).toBe(2)
+  })
 })

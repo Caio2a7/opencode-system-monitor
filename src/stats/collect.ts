@@ -16,6 +16,7 @@ export type { CollectorDeps } from "./sources/types"
 
 const RUN_TIMEOUT_MS = 3000
 const RUN_MAX_BYTES = 64 * 1024
+const DISK_REFRESH_MS = 10_000
 
 const defaultDeps: CollectorDeps = {
   readText: (path) => readFile(path, "utf8"),
@@ -65,6 +66,8 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
   const source = sourceFor(deps)
   let prevCpu: CpuTimes | null = null
   let smiAbsent = false
+  let cachedDisk: DiskStats | null = null
+  let nextDiskRefresh = 0
 
   const cpu = async (): Promise<CpuStats | null> => {
     const next = await source.cpuTimes()
@@ -74,8 +77,12 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
     return { percent: cpuPercent(prev, next) }
   }
   const disk = async (): Promise<DiskStats | null> => {
+    const now = deps.now()
+    if (cachedDisk !== null && now < nextDiskRefresh) return cachedDisk
     const percent = diskPercent(await deps.statfs(diskRoot(deps.platform, deps.env)))
-    return percent === null ? null : { percent }
+    cachedDisk = percent === null ? null : { percent }
+    if (cachedDisk !== null) nextDiskRefresh = now + DISK_REFRESH_MS
+    return cachedDisk
   }
   const gpu = async (signal?: AbortSignal): Promise<GpuResult> => {
     if (!source.hasGpu) return null
