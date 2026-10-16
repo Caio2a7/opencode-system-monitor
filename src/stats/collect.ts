@@ -73,43 +73,32 @@ function withFastBudget<T>(task: Promise<T>, budgetMs: number, fallback: T): Pro
   })
 }
 
-/** Creates a stats collector; CPU deltas and GPU discovery state are kept inside the instance. */
-export function createCollector(overrides: Partial<CollectorDeps> = {}): { collect(signal?: AbortSignal): Promise<SystemStats> } {
-  const platform = overrides.platform ?? defaultDeps.platform
-  const env = overrides.env ?? defaultDeps.env
-  const deps: CollectorDeps = {
-    ...defaultDeps,
-    runSmi: createSmiRunner(undefined, platform, env),
-    ...overrides,
-  }
-  const source = sourceFor(deps)
-  let prevCpu: CpuTimes | null = null
-  let smiAbsent = false
-  let cachedDisk: DiskStats | null = null
-  let nextDiskRefresh = 0
-  let lastGpu: GpuResult | undefined
-  let gpuInflight: Promise<GpuResult> | null = null
+type Reader<T> = (signal?: AbortSignal) => Promise<T>
 
-  const cpu = async (): Promise<CpuStats | null> => {
-    const next = await source.cpuTimes()
-    if (!next) return null
-    const prev = prevCpu
-    prevCpu = next
-    return { percent: cpuPercent(prev, next) }
-  }
-  const disk = async (): Promise<DiskStats | null> => {
+/** statfs is cheap but disk usage moves slowly: cache successful reads for DISK_REFRESH_MS. */
+function createDiskReader(deps: CollectorDeps, path: string): Reader<DiskStats | null> {
+  let cached: DiskStats | null = null
+  let nextRefresh = 0
+  return async () => {
     const now = deps.now()
-    if (cachedDisk !== null && now < nextDiskRefresh) return cachedDisk
-    const percent = diskPercent(await deps.statfs(diskRoot(deps.platform, deps.env)))
-    cachedDisk = percent === null ? null : { percent }
-    if (cachedDisk !== null) nextDiskRefresh = now + DISK_REFRESH_MS
-    return cachedDisk
+    if (cached !== null && now < nextRefresh) return cached
+    const percent = diskPercent(await deps.statfs(path))
+    cached = percent === null ? null : { percent }
+    if (cached !== null) nextRefresh = now + DISK_REFRESH_MS
+    return cached
   }
+}
+
+/** nvidia-smi first (ENOENT cached), then the platform fallback; slow reads are deduplicated and budgeted. */
+function createGpuReader(deps: CollectorDeps, source: StatsSource): Reader<GpuResult> {
+  let smiAbsent = false
+  let last: GpuResult | undefined
+  let inflight: Promise<GpuResult> | null = null
+
   const fetchGpu = async (signal?: AbortSignal): Promise<GpuResult> => {
     if (!smiAbsent) {
       try {
-        const parsed = parseNvidiaSmi(await deps.runSmi(signal))
-        return parsed ?? { error: "unexpected nvidia-smi output" }
+        return parseNvidiaSmi(await deps.runSmi(signal)) ?? { error: "unexpected nvidia-smi output" }
       } catch (err) {
         if (!hasCode(err, "ENOENT")) return { error: messageOf(err) }
         smiAbsent = true
@@ -117,17 +106,41 @@ export function createCollector(overrides: Partial<CollectorDeps> = {}): { colle
     }
     return (await source.fallbackGpu?.()) ?? null
   }
-  const gpu = async (signal?: AbortSignal): Promise<GpuResult> => {
+  return async (signal) => {
     if (!source.hasGpu) return null
-    if (gpuInflight === null) {
-      gpuInflight = fetchGpu(signal).then((res) => {
-        lastGpu = res
-        gpuInflight = null
+    if (inflight === null) {
+      inflight = fetchGpu(signal).then((res) => {
+        last = res
+        inflight = null
         return res
       })
     }
-    return lastGpu !== undefined ? withFastBudget(gpuInflight, GPU_FAST_BUDGET_MS, lastGpu) : gpuInflight
+    return last !== undefined ? withFastBudget(inflight, GPU_FAST_BUDGET_MS, last) : inflight
   }
+}
+
+function createCpuReader(source: StatsSource): Reader<CpuStats | null> {
+  let prev: CpuTimes | null = null
+  return async () => {
+    const next = await source.cpuTimes()
+    if (!next) return null
+    const percent = cpuPercent(prev, next)
+    prev = next
+    return { percent }
+  }
+}
+
+/** Creates a stats collector; CPU deltas, caches and GPU discovery state are kept inside the instance. */
+export function createCollector(
+  overrides: Partial<CollectorDeps> = {},
+): { collect(signal?: AbortSignal): Promise<SystemStats> } {
+  const platform = overrides.platform ?? defaultDeps.platform
+  const env = overrides.env ?? defaultDeps.env
+  const deps: CollectorDeps = { ...defaultDeps, runSmi: createSmiRunner(undefined, platform, env), ...overrides }
+  const source = sourceFor(deps)
+  const cpu = createCpuReader(source)
+  const disk = createDiskReader(deps, diskRoot(deps.platform, deps.env))
+  const gpu = createGpuReader(deps, source)
 
   return {
     async collect(signal) {
