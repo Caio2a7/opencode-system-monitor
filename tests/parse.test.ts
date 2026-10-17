@@ -136,6 +136,15 @@ describe("parseNvidiaSmi", () => {
     expect(gpu.util).toBe(89)
   })
 
+  test("selects the GPU line by index, tolerating CRLF and blank lines", () => {
+    const out = `${SMI_LINE.trim()}\r\n\r\n10, 512, 2048, 30, Other GPU\r\n`
+    const second = parseNvidiaSmi(out, 1)!
+    expect(second.util).toBe(10)
+    expect(second.name).toBe("Other GPU")
+    expect(second.vramPercent).toBeCloseTo(25, 10)
+    expect(parseNvidiaSmi(out, 2)).toBeNull()
+  })
+
   test.each([
     ["empty", ""],
     ["whitespace", "  \n"],

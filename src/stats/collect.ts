@@ -76,6 +76,8 @@ function withFastBudget<T>(task: Promise<T>, budgetMs: number, fallback: T): Pro
 export interface CollectorConfig {
   /** Path whose filesystem usage is reported; defaults to `/` or `%SystemDrive%\`. */
   diskPath?: string | null
+  /** Zero-based NVIDIA GPU index (nvidia-smi output line). */
+  gpuIndex?: number
 }
 
 type Reader<T> = (signal?: AbortSignal) => Promise<T>
@@ -95,7 +97,7 @@ function createDiskReader(deps: CollectorDeps, path: string): Reader<DiskStats |
 }
 
 /** nvidia-smi first (ENOENT cached), then the platform fallback; slow reads are deduplicated and budgeted. */
-function createGpuReader(deps: CollectorDeps, source: StatsSource): Reader<GpuResult> {
+function createGpuReader(deps: CollectorDeps, source: StatsSource, gpuIndex: number): Reader<GpuResult> {
   let smiAbsent = false
   let last: GpuResult | undefined
   let inflight: Promise<GpuResult> | null = null
@@ -103,7 +105,7 @@ function createGpuReader(deps: CollectorDeps, source: StatsSource): Reader<GpuRe
   const fetchGpu = async (signal?: AbortSignal): Promise<GpuResult> => {
     if (!smiAbsent) {
       try {
-        return parseNvidiaSmi(await deps.runSmi(signal)) ?? { error: "unexpected nvidia-smi output" }
+        return parseNvidiaSmi(await deps.runSmi(signal), gpuIndex) ?? { error: "unexpected nvidia-smi output" }
       } catch (err) {
         if (!hasCode(err, "ENOENT")) return { error: messageOf(err) }
         smiAbsent = true
@@ -146,7 +148,7 @@ export function createCollector(
   const source = sourceFor(deps)
   const cpu = createCpuReader(source)
   const disk = createDiskReader(deps, config.diskPath ?? diskRoot(deps.platform, deps.env))
-  const gpu = createGpuReader(deps, source)
+  const gpu = createGpuReader(deps, source, config.gpuIndex ?? 0)
 
   return {
     async collect(signal) {

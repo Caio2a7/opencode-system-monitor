@@ -268,4 +268,11 @@ describe("createCollector", () => {
     expect(paths).toEqual(["/home", "/"])
   })
 
+  test("config.gpuIndex selects the nvidia-smi line", async () => {
+    const runSmi = async () => `${SMI_LINE.trim()}\n10, 512, 2048, 30, Second GPU\n`
+    const second = await createCollector(fakeDeps({ runSmi }).deps, { gpuIndex: 1 }).collect()
+    expect(second.gpu && "name" in second.gpu ? second.gpu.name : null).toBe("Second GPU")
+    const missing = await createCollector(fakeDeps({ runSmi }).deps, { gpuIndex: 5 }).collect()
+    expect(missing.gpu).toEqual({ error: "unexpected nvidia-smi output" })
+  })
 })

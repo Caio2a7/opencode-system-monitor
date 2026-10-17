@@ -73,9 +73,10 @@ function smiNumber(raw: string): number | "na" | "bad" {
   return raw !== "" && Number.isFinite(n) && n >= 0 ? n : "bad"
 }
 
-/** Parses the first GPU line of `--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu,name`. */
-export function parseNvidiaSmi(stdout: string): GpuStats | null {
-  const fields = stdout.trim().split("\n")[0]?.split(",").map((s) => s.trim())
+/** Parses one GPU line (default: the first) of `--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu,name`. */
+export function parseNvidiaSmi(stdout: string, index = 0): GpuStats | null {
+  const lines = stdout.split("\n").map((l) => l.trim()).filter((l) => l !== "")
+  const fields = lines[index]?.split(",").map((s) => s.trim())
   if (!fields || fields.length < 5) return null
   const [utilRaw, usedRaw, totalRaw, tempRaw] = fields as [string, string, string, string]
   const util = smiNumber(utilRaw)

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { parseOptions } from "../src/options"
 
-const DEFAULTS = { refreshMs: 2000, diskPath: null }
+const DEFAULTS = { refreshMs: 2000, diskPath: null, gpuIndex: 0 }
 
 describe("parseOptions", () => {
   test.each([
@@ -61,5 +61,27 @@ describe("parseOptions diskPath", () => {
     ["object", { path: "/" }],
   ])("invalid %s falls back to null", (_n, diskPath) => {
     expect(parseOptions({ diskPath }).diskPath).toBeNull()
+  })
+})
+
+describe("parseOptions gpuIndex", () => {
+  test("accepts integers in [0, 63]", () => {
+    expect(parseOptions({ gpuIndex: 0 }).gpuIndex).toBe(0)
+    expect(parseOptions({ gpuIndex: 1 }).gpuIndex).toBe(1)
+    expect(parseOptions({ gpuIndex: 63 }).gpuIndex).toBe(63)
+  })
+
+  test.each([
+    ["negative", -1],
+    ["too large", 64],
+    ["fractional", 1.5],
+    ["NaN", Number.NaN],
+    ["string", "1"],
+  ])("invalid %s falls back to 0", (_n, gpuIndex) => {
+    expect(parseOptions({ gpuIndex }).gpuIndex).toBe(0)
+  })
+
+  test("options are independent: one invalid field does not reset the others", () => {
+    expect(parseOptions({ refreshMs: 1000, diskPath: 7, gpuIndex: 2 })).toEqual({ refreshMs: 1000, diskPath: null, gpuIndex: 2 })
   })
 })
