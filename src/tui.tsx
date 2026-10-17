@@ -14,7 +14,7 @@ const plugin = {
   id: ID,
   setup(context) {
     const options = parseOptions(context.options)
-    const collector = createCollector()
+    const collector = createCollector({}, { diskPath: options.diskPath })
     const [stats, setStats] = createSignal<SystemStats>(EMPTY)
     let disposed = false
     let timer: ReturnType<typeof setTimeout> | undefined

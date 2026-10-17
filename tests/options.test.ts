@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test"
 import { parseOptions } from "../src/options"
 
+const DEFAULTS = { refreshMs: 2000, diskPath: null }
+
 describe("parseOptions", () => {
   test.each([
     ["undefined", undefined],
@@ -8,12 +10,12 @@ describe("parseOptions", () => {
     ["string", "fast"],
     ["array", []],
     ["empty object", {}],
-  ])("defaults to 2000 for %s", (_n, raw) => {
-    expect(parseOptions(raw)).toEqual({ refreshMs: 2000 })
+  ])("defaults for %s", (_n, raw) => {
+    expect(parseOptions(raw)).toEqual(DEFAULTS)
   })
 
   test("accepts a valid value", () => {
-    expect(parseOptions({ refreshMs: 5000 })).toEqual({ refreshMs: 5000 })
+    expect(parseOptions({ refreshMs: 5000 })).toEqual({ ...DEFAULTS, refreshMs: 5000 })
   })
 
   test("boundaries are inclusive", () => {
@@ -41,5 +43,23 @@ describe("parseOptions", () => {
     expect(parseOptions({ refreshMs: "3000" }).refreshMs).toBe(2000)
     expect(parseOptions({ refreshMs: null }).refreshMs).toBe(2000)
     expect(parseOptions({ refreshMs: {} }).refreshMs).toBe(2000)
+  })
+})
+
+describe("parseOptions diskPath", () => {
+  test("accepts and trims a path", () => {
+    expect(parseOptions({ diskPath: "/home" }).diskPath).toBe("/home")
+    expect(parseOptions({ diskPath: "  D:\\  " }).diskPath).toBe("D:\\")
+  })
+
+  test.each([
+    ["number", 5],
+    ["empty", ""],
+    ["blank", "   "],
+    ["NUL byte", "/home\0/x"],
+    ["too long", `/${"a".repeat(5000)}`],
+    ["object", { path: "/" }],
+  ])("invalid %s falls back to null", (_n, diskPath) => {
+    expect(parseOptions({ diskPath }).diskPath).toBeNull()
   })
 })

@@ -73,6 +73,11 @@ function withFastBudget<T>(task: Promise<T>, budgetMs: number, fallback: T): Pro
   })
 }
 
+export interface CollectorConfig {
+  /** Path whose filesystem usage is reported; defaults to `/` or `%SystemDrive%\`. */
+  diskPath?: string | null
+}
+
 type Reader<T> = (signal?: AbortSignal) => Promise<T>
 
 /** statfs is cheap but disk usage moves slowly: cache successful reads for DISK_REFRESH_MS. */
@@ -133,13 +138,14 @@ function createCpuReader(source: StatsSource): Reader<CpuStats | null> {
 /** Creates a stats collector; CPU deltas, caches and GPU discovery state are kept inside the instance. */
 export function createCollector(
   overrides: Partial<CollectorDeps> = {},
+  config: CollectorConfig = {},
 ): { collect(signal?: AbortSignal): Promise<SystemStats> } {
   const platform = overrides.platform ?? defaultDeps.platform
   const env = overrides.env ?? defaultDeps.env
   const deps: CollectorDeps = { ...defaultDeps, runSmi: createSmiRunner(undefined, platform, env), ...overrides }
   const source = sourceFor(deps)
   const cpu = createCpuReader(source)
-  const disk = createDiskReader(deps, diskRoot(deps.platform, deps.env))
+  const disk = createDiskReader(deps, config.diskPath ?? diskRoot(deps.platform, deps.env))
   const gpu = createGpuReader(deps, source)
 
   return {

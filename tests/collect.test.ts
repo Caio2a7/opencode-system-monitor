@@ -256,4 +256,16 @@ describe("createCollector", () => {
     const fourth = await c.collect()
     expect(fourth.gpu && "util" in fourth.gpu ? fourth.gpu.util : null).toBe(42)
   })
+
+  test("config.diskPath overrides the default disk root", async () => {
+    const paths: string[] = []
+    const statfs = async (p: string) => {
+      paths.push(p)
+      return { blocks: 1000, bfree: 400, bavail: 300 }
+    }
+    await createCollector(fakeDeps({ statfs }).deps, { diskPath: "/home" }).collect()
+    await createCollector(fakeDeps({ statfs }).deps, { diskPath: null }).collect()
+    expect(paths).toEqual(["/home", "/"])
+  })
+
 })
