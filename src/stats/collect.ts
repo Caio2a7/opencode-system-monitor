@@ -59,7 +59,6 @@ function sourceFor(deps: CollectorDeps): StatsSource {
 function withFastBudget<T>(task: Promise<T>, budgetMs: number, fallback: T): Promise<T> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => resolve(fallback), budgetMs)
-    timer.unref?.()
     task.then(
       (val) => {
         clearTimeout(timer)

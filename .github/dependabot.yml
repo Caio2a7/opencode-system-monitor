@@ -9,7 +9,7 @@ updates:
       actions-minor-patch:
         update-types: [minor, patch]
 
-  - package-ecosystem: npm
+  - package-ecosystem: bun
     directory: /
     schedule:
       interval: weekly
@@ -20,5 +20,5 @@ updates:
       - dependency-name: "@opencode/*"
       - dependency-name: "solid-js"
     groups:
-      npm-minor-patch:
+      bun-minor-patch:
         update-types: [minor, patch]
